@@ -6,3 +6,7 @@
 - Conduct EDA (checks for distributions, outliers, etc) for your 20 fields 
 - Consolidated R script by Saturday 2pm meeting
 
+
+# Modelling:
+- Explanatory: Santhosh, Ker Yu
+- Predictive: Neerja, Nicha 
