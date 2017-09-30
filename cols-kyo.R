@@ -16,7 +16,6 @@ head(data[,(ncol(data)-19):ncol(data)])
 
 KitchenQual = factor(KitchenQual, levels = c("Fa", "TA", "Gd", "Ex"), labels = c(1,2,3,4), ordered = TRUE)
 TotRmsAbvGrd
-unique(Functional)
 Functional = factor(Functional,  levels = c("Sev", "Maj2","Maj1", "Mod",  "Min2", "Min1",  "Typ"), labels = c(1,2,3,4,5,6,7), ordered = TRUE)
 Fireplaces
 GarageCars
