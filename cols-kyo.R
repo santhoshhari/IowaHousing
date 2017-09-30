@@ -1,12 +1,6 @@
 rm(list=ls())
 
 data = read.table('/Users/booranium/usf/601_regression/project/housing.txt', sep = ',', header = T, stringsAsFactors = F)
-head(data)
-#attach(data)
-
-n = ncol(data)
-start = ncol(data)-19
-start
 head(data[,(ncol(data)-19):ncol(data)])
 
 # last 19 cols 
