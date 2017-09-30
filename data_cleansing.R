@@ -14,6 +14,10 @@ HousingDF$Foundation <- factor(HousingDF$Foundation, levels = unique(HousingDF$F
 HousingDF$Heating <- factor(HousingDF$Heating, levels = unique(HousingDF$Heating)[order(unique(HousingDF$Heating))], labels = seq(length(unique(HousingDF$Heating))), ordered = T)
 HousingDF$HeatingQC <- factor(HousingDF$HeatingQC, levels = c("Po", "Fa", "TA", "Gd", "Ex"), labels = seq(5), ordered = T)
 HousingDF$CentralAir <- factor(HousingDF$CentralAir, levels = c("Y", "N"), labels = seq(2), ordered = T)
-
+KitchenQual = factor(KitchenQual, levels = c("Fa", "TA", "Gd", "Ex"), labels = c(1,2,3,4), ordered = TRUE)
+Functional = factor(Functional,  levels = c("Sev", "Maj2","Maj1", "Mod",  "Min2", "Min1",  "Typ"), labels = c(1,2,3,4,5,6,7), ordered = TRUE)
+PavedDrive = factor(PavedDrive, levels = c("N", "P", "Y"), labels = (1,2,3), ordered = TRUE)
+SaleType = factor(SaleType)
+SaleCondition = factor(SaleCondition)
 
 
