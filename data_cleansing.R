@@ -12,18 +12,18 @@ getmode <- function(v) {
 
 ## Santhosh
 housingDF$PoolQC[is.na(housingDF$PoolQC)] <- '0'
-housingDF$PoolQC <- factor(housingDF$PoolQC, levels=c('0','Fa','TA', 'Gd','Ex'), ordered=T)
+housingDF$PoolQC <- factor(housingDF$PoolQC, levels=c('0','Fa','TA', 'Gd','Ex'), labels = c(0,1,2,3,4), ordered=T)
 housingDF$MiscFeature[is.na(housingDF$MiscFeature)] <- '0'
-housingDF$MiscFeature <- factor(housingDF$MiscFeature, levels=c('0','Elev','Gar2', 'Othr','Shed','TenC'))
+housingDF$MiscFeature <- factor(housingDF$MiscFeature, levels=c('0','Elev','Gar2', 'Othr','Shed','TenC'), labels = c(0, 1,2,3,4,5))
 housingDF$Alley[is.na(housingDF$Alley)] <- '0'
-housingDF$Alley <- factor(housingDF$Alley, levels=c('0','Grvl','Pave'), ordered=T)
+housingDF$Alley <- factor(housingDF$Alley, levels=c('0','Grvl','Pave'), labels = c(0,1,2), ordered=T)
 housingDF$Fence[is.na(housingDF$Fence)] <- '0'
-housingDF$Fence <- factor(housingDF$Fence, levels=c('0','MnWw','GdWo', 'MnPrv', 'GdPrv'), ordered=T)
+housingDF$Fence <- factor(housingDF$Fence, levels=c('0','MnWw','GdWo', 'MnPrv', 'GdPrv'), labels = c(0,1,2,3,4), ordered=T)
 housingDF$FireplaceQu[is.na(housingDF$FireplaceQu)] <- '0'
-housingDF$FireplaceQu <- factor(housingDF$FireplaceQu, levels=c('0','TA','Gd', 'Ex'), ordered=T)
+housingDF$FireplaceQu <- factor(housingDF$FireplaceQu, levels=c('0','TA','Gd', 'Ex'), labels = c(0,1,2,3), ordered=T)
 housingDF$LotFrontage[is.na(housingDF$LotFrontage)] <- mean(housingDF$LotFrontage, na.rm = T)
 housingDF$GarageType[is.na(housingDF$GarageType)] <- '0'
-housingDF$GarageType <- factor(housingDF$GarageType, levels=c('0','Detchd','CarPort', 'BuiltIn', 'Basment', 'Attchd', '2Types'), ordered=T)
+housingDF$GarageType <- factor(housingDF$GarageType, levels=c('0','Detchd','CarPort', 'BuiltIn', 'Basment', 'Attchd', '2Types'), labels = seq(length(unique(housingDF$GarageType))), ordered=T)
 housingDF$GarageYrBlt[is.na(housingDF$GarageYrBlt)] <- median(housingDF$GarageYrBlt, na.rm=T)
 housingDF$GarageFinish[is.na(housingDF$GarageFinish)] <- '0'
 housingDF$GarageFinish <- factor(housingDF$GarageFinish, levels=c('0','Unf','RFn', 'Fin'), ordered=T)
