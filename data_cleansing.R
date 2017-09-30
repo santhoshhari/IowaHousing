@@ -26,21 +26,21 @@ housingDF$GarageType[is.na(housingDF$GarageType)] <- '0'
 housingDF$GarageType <- factor(housingDF$GarageType, levels=c('0','Detchd','CarPort', 'BuiltIn', 'Basment', 'Attchd', '2Types'), labels = seq(length(unique(housingDF$GarageType))), ordered=T)
 housingDF$GarageYrBlt[is.na(housingDF$GarageYrBlt)] <- median(housingDF$GarageYrBlt, na.rm=T)
 housingDF$GarageFinish[is.na(housingDF$GarageFinish)] <- '0'
-housingDF$GarageFinish <- factor(housingDF$GarageFinish, levels=c('0','Unf','RFn', 'Fin'), ordered=T)
+housingDF$GarageFinish <- factor(housingDF$GarageFinish, levels=c('0','Unf','RFn', 'Fin'), labels = seq(4), ordered=T)
 housingDF$GarageQual[is.na(housingDF$GarageQual)] <- '0'
-housingDF$GarageQual <- factor(housingDF$GarageQual, levels=c('0','Po', 'Fa','TA', 'Gd','Ex'), ordered=T)
+housingDF$GarageQual <- factor(housingDF$GarageQual, levels=c('0','Po', 'Fa','TA', 'Gd','Ex'), labels = seq(6), ordered=T)
 housingDF$GarageCond[is.na(housingDF$GarageCond)] <- '0'
-housingDF$GarageCond <- factor(housingDF$GarageCond, levels=c('0','Po', 'Fa','TA', 'Gd','Ex'), ordered=T)
+housingDF$GarageCond <- factor(housingDF$GarageCond, levels=c('0','Po', 'Fa','TA', 'Gd','Ex'), labels = seq(6), ordered=T)
 housingDF$BsmtExposure[is.na(housingDF$BsmtExposure)] <- '0'
-housingDF$BsmtExposure <- factor(housingDF$BsmtExposure, levels=c('0','No','Mn', 'Av', 'Gd'), ordered=T)
+housingDF$BsmtExposure <- factor(housingDF$BsmtExposure, levels=c('0','No','Mn', 'Av', 'Gd'), labels = seq(5), ordered=T)
 housingDF$BsmtFinType2[is.na(housingDF$BsmtFinType2)] <- '0'
-housingDF$BsmtFinType2 <- factor(housingDF$BsmtFinType2, levels=c('0','Unf','LwQ', 'Rec', 'BLQ', 'ALQ', 'GLQ'), ordered=T)
+housingDF$BsmtFinType2 <- factor(housingDF$BsmtFinType2, levels=c('0','Unf','LwQ', 'Rec', 'BLQ', 'ALQ', 'GLQ'), labels = seq(7), ordered=T)
 housingDF$BsmtQual[is.na(housingDF$BsmtQual)] <- '0'
-housingDF$BsmtQual <- factor(housingDF$BsmtQual, levels=c('0','Po', 'Fa','TA', 'Gd','Ex'), ordered=T)
+housingDF$BsmtQual <- factor(housingDF$BsmtQual, levels=c('0','Po', 'Fa','TA', 'Gd','Ex'), labels = seq(6), ordered=T)
 housingDF$BsmtCond[is.na(housingDF$BsmtCond)] <- '0'
-housingDF$BsmtCond <- factor(housingDF$BsmtCond, levels=c('0','Po', 'Fa','TA', 'Gd','Ex'), ordered=T)
+housingDF$BsmtCond <- factor(housingDF$BsmtCond, levels=c('0','Po', 'Fa','TA', 'Gd','Ex'), labels = seq(6), ordered=T)
 housingDF$BsmtFinType1[is.na(housingDF$BsmtFinType1)] <- '0'
-housingDF$BsmtFinType1 <- factor(housingDF$BsmtFinType1, levels=c('0','Unf','LwQ', 'Rec', 'BLQ', 'ALQ', 'GLQ'), ordered=T)
+housingDF$BsmtFinType1 <- factor(housingDF$BsmtFinType1, levels=c('0','Unf','LwQ', 'Rec', 'BLQ', 'ALQ', 'GLQ'), labels = seq(7), ordered=T)
 housingDF$MasVnrType[is.na(housingDF$MasVnrType)] <- 'None'
 housingDF$MasVnrType <- factor(housingDF$MasVnrType, levels = unique(housingDF$MasVnrType)[order(unique(housingDF$MasVnrType))] , labels = seq(length(unique(housingDF$MasVnrType))), ordered = T)
 housingDF$MasVnrArea[is.na(housingDF$MasVnrArea)] <- 0
