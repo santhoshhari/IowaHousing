@@ -85,4 +85,4 @@ housingDF$Exterior1st <-  factor(housingDF$Exterior1st, levels = unique(housingD
 
 write.csv(housingDF, file = "clean_house.csv", row.names = F)
 
-
+new <- read.csv("clean_house.csv")
