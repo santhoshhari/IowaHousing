@@ -1,0 +1,73 @@
+---
+title: "Case Study"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#setwd('msan/LinearRegressionAnalysis/')
+housingDF = read.csv('housing.txt')
+
+
+housingDF$MSSubClass = as.factor(housingDF$MSSubClass)
+housingDF$MSZoning = factor(housingDF$MSZoning, levels = c('C (all)', 'FV', 'RH', 'RL', 'RM' ), labels = c(1,2,3,4,5), ordered = TRUE)
+levels(housingDF$MSZoning) = c('C (all)', 'FV', 'RH', 'RL', 'RM' )
+housingDF$MSZoning
+housingDF$Street = factor(housingDF$Street, labels = c(1,2))
+
+housingDF$LotShape = factor(housingDF$LotShape, levels = c('IR1', 'IR2', 'IR3', 'Reg'), labels = c(1,2,3,4))
+
+housingDF$LandContour = factor(housingDF$LandContour, levels = c('Bnk', 'HLS', 'Low', 'Lvl' ), labels = c(1,2,3,4))
+
+
+
+
+housingDF$Utilities = factor(housingDF$Utilities, levels = c('AllPub', 'NoSeWa'), labels = c(1,2))
+
+housingDF$LotConfig = factor(housingDF$LotConfig, levels = c('Corner', 'CulDSac', 'FR2', 'FR3', 'Inside'), labels = c(1,2,3,4,5))
+
+housingDF$LandSlope = factor(housingDF$LandSlope, levels = c('Gtl', 'Mod', 'Sev'), labels = c(1,2,3), ordered = TRUE)
+
+
+housingDF$Neighborhood = factor(housingDF$Neighborhood, levels = c('CollgCr', 'Veenker', 'Crawfor', 'NoRidge', 'Mitchel', 'Somerst', 'NWAmes',  'OldTown', 'BrkSide', 'Sawyer',  'NridgHt', 'NAmes',   'SawyerW', 'IDOTRR',  'MeadowV', 'Edwards', 'Timber',  'Gilbert', 'StoneBr', 'ClearCr', 'NPkVill', 'Blmngtn', 'BrDale',  'SWISU',  
+'Blueste'), labels = c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25))
+
+
+housingDF$Condition1 = factor(housingDF$Condition1, levels = c('Artery', 'Feedr', 'Norm', 'PosA', 'PosN', 'RRAe', 'RRAn', 'RRNe', 'RRNn' ), labels = c(1,2,3,4,5,6,7,8,9))
+
+
+housingDF$Condition2 = factor(housingDF$Condition2, levels = c('Artery', 'Feedr', 'Norm', 'PosA', 'PosN', 'RRAe', 'RRAn',  'RRNn' ), labels = c(1,2,3,4,5,6,7,8))
+
+
+
+housingDF$BldgType = factor(housingDF$BldgType, levels = c('1Fam', '2fmCon', 'Duplex', 'Twnhs', 'TwnhsE' ), labels = c(1,2,3,4,5))
+
+
+
+housingDF$HouseStyle = factor(housingDF$HouseStyle, levels = c('1.5Fin', '1.5Unf', '1Story', '2.5Fin', '2.5Unf', '2Story', 'SFoyer', 'SLvl' ), labels = c(1,2,3,4,5,6,7,8))
+
+
+
+housingDF$OverallQual = factor(housingDF$OverallQual, ordered = T)
+
+
+
+housingDF$OverallCond = factor(housingDF$OverallCond, ordered = T)
+
+
+
+housingDF$YearBuilt = factor(housingDF$YearBuilt, ordered = TRUE)
+
+housingDF$YearRemodAdd = factor(housingDF$YearRemodAdd, ordered = TRUE)
+
+housingDF$RoofStyle = factor(housingDF$RoofStyle, levels = c('Flat', 'Gable', 'Gambrel', 'Hip', 'Mansard', 'Shed' ), labels = c(1,2,3,4,5, 6))
+
+
+housingDF$RoofMatl = factor(housingDF$RoofMatl, levels = c('CompShg', 'WdShngl', 'Metal','WdShake', 'Membran', 'Tar&Grv', 'Roll', 'ClyTile' ), labels = c(1,2,3,4,5,6,7,8))
+
+housingDF$Exterior1st =  factor(housingDF$Exterior1st, levels = c('VinylSd', 'MetalSd', 'Wd Sdng', 'HdBoard', 'BrkFace', 'WdShing', 'CemntBd', 'Plywood', 'AsbShng', 'Stucco',  'BrkComm', 'AsphShn', 'Stone',   'ImStucc', 'CBlock'), labels = c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15))
+
+```
