@@ -4,9 +4,6 @@ data = read.table('/Users/booranium/usf/601_regression/project/housing.txt', sep
 head(data)
 #attach(data)
 
-unique(as.numeric(SaleType))
-unique(SaleType)
-
 n = ncol(data)
 start = ncol(data)-19
 start
