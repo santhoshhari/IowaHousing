@@ -14,8 +14,6 @@ housingDF = read.csv('housing.txt')
 
 housingDF$MSSubClass = as.factor(housingDF$MSSubClass)
 housingDF$MSZoning = factor(housingDF$MSZoning, levels = c('C (all)', 'FV', 'RH', 'RL', 'RM' ), labels = c(1,2,3,4,5), ordered = TRUE)
-levels(housingDF$MSZoning) = c('C (all)', 'FV', 'RH', 'RL', 'RM' )
-housingDF$MSZoning
 housingDF$Street = factor(housingDF$Street, labels = c(1,2))
 
 housingDF$LotShape = factor(housingDF$LotShape, levels = c('IR1', 'IR2', 'IR3', 'Reg'), labels = c(1,2,3,4))
