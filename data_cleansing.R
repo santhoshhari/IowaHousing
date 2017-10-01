@@ -20,7 +20,7 @@ housingDF$Alley <- factor(housingDF$Alley, levels=c('0','Grvl','Pave'), labels =
 housingDF$Fence[is.na(housingDF$Fence)] <- '0'
 housingDF$Fence <- factor(housingDF$Fence, levels=c('0','MnWw','GdWo', 'MnPrv', 'GdPrv'), labels = c(0,1,2,3,4), ordered=T)
 housingDF$FireplaceQu[is.na(housingDF$FireplaceQu)] <- '0'
-housingDF$FireplaceQu <- factor(housingDF$FireplaceQu, levels=c('0','TA','Gd', 'Ex'), labels = c(0,1,2,3), ordered=T)
+housingDF$FireplaceQu <- factor(housingDF$FireplaceQu, levels=c('0','Po', 'Fa', 'TA','Gd', 'Ex'), labels = c(0,1,2,3,4,5), ordered=T)
 housingDF$LotFrontage[is.na(housingDF$LotFrontage)] <- mean(housingDF$LotFrontage, na.rm = T)
 housingDF$GarageType[is.na(housingDF$GarageType)] <- '0'
 housingDF$GarageType <- factor(housingDF$GarageType, levels=c('0','Detchd','CarPort', 'BuiltIn', 'Basment', 'Attchd', '2Types'), labels = seq(length(unique(housingDF$GarageType))), ordered=T)
