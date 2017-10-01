@@ -1,0 +1,25 @@
+---
+title: "Linearity Check"
+author: "Sri Santhosh Hari"
+date: "9/30/2017"
+output: pdf_document
+---
+
+```{r setup, include=FALSE, warning=F}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+```
+
+```{r,fig.height=3.5}
+
+housingDF <- read.csv("./clean_house.csv")
+
+for(i in 2:length(housingDF)-1){
+  plot <- ggplot(housingDF, aes(x=housingDF[i], y=SalePrice))+
+    labs(x=names(housingDF)[i], y="Sale Price")+
+    geom_point()
+  print(plot)
+}
+
+```
+
