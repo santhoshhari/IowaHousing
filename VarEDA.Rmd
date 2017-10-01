@@ -1,0 +1,27 @@
+---
+title: "Untitled"
+author: "Nicha Ruchirawat"
+date: "September 30, 2017"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+#setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+new <- read.csv("clean_house.csv")
+```
+
+
+```{r}
+colname <- colnames(new)
+for (col in colname) {
+  print(col)
+  data <- new[[col]]
+  plot(data)
+}
+```
+
