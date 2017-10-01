@@ -31,6 +31,4 @@ housingDF$MasVnrType[is.na(housingDF$MasVnrType)] <- 'None'
 housingDF$MasVnrArea[is.na(housingDF$MasVnrArea)] <- 0
 housingDF$Electrical <- getmode(housingDF$Electrical)
 
-write.csv(housingDF, file = "clean_house.csv", row.names = F)
 
-new <- read.csv("clean_house.csv")
