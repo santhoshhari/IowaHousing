@@ -1,0 +1,94 @@
+Call:
+lm(formula = y ~ MSZoningFV + LotArea + StreetPave + LotConfigCulDSac + 
+    LandSlopeSev + NeighborhoodCrawfor + NeighborhoodEdwards + 
+    NeighborhoodMitchel + NeighborhoodNAmes + NeighborhoodNoRidge + 
+    NeighborhoodNridgHt + NeighborhoodNWAmes + NeighborhoodStoneBr + 
+    Condition1Norm + Condition2PosN + BldgTypeTwnhs + BldgTypeTwnhsE + 
+    OverallQual + OverallCond + YearBuilt + RoofMatlCompShg + 
+    RoofMatlMembran + RoofMatlMetal + RoofMatlRoll + RoofMatlTar.Grv + 
+    RoofMatlWdShake + RoofMatlWdShngl + Exterior1stBrkFace + 
+    MasVnrArea + ExterQualGd + ExterQualTA + BsmtQualEx + BsmtQualFa + 
+    BsmtQualGd + BsmtExposureAv + BsmtFinSF1 + BsmtFinSF2 + BsmtUnfSF + 
+    X1stFlrSF + X2ndFlrSF + BedroomAbvGr + KitchenAbvGr + KitchenQualFa + 
+    KitchenQualGd + KitchenQualTA + TotRmsAbvGrd + FunctionalTyp + 
+    GarageCars + GarageQualEx + GarageQualFa + GarageQualGd + 
+    GarageQualPo + GarageCondEx + GarageCondFa + GarageCondGd + 
+    GarageCondPo + WoodDeckSF + ScreenPorch + PoolArea + PoolQCEx + 
+    PoolQCFa + SaleTypeNew + SaleConditionNormal, data = housingDF_new)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-188186  -10390     120    9983  188186 
+
+Coefficients:
+                      Estimate Std. Error t value Pr(>|t|)    
+(Intercept)         -1.499e+06  8.840e+04 -16.956  < 2e-16 ***
+MSZoningFV           1.622e+04  3.285e+03   4.938 8.85e-07 ***
+LotArea              5.671e-01  8.585e-02   6.606 5.60e-11 ***
+StreetPave           4.226e+04  9.949e+03   4.248 2.30e-05 ***
+LotConfigCulDSac     8.208e+03  2.613e+03   3.141 0.001719 ** 
+LandSlopeSev        -2.799e+04  9.057e+03  -3.090 0.002038 ** 
+NeighborhoodCrawfor  2.320e+04  3.559e+03   6.519 9.89e-11 ***
+NeighborhoodEdwards -7.423e+03  2.601e+03  -2.854 0.004380 ** 
+NeighborhoodMitchel -1.375e+04  3.592e+03  -3.829 0.000135 ***
+NeighborhoodNAmes   -6.949e+03  2.028e+03  -3.426 0.000630 ***
+NeighborhoodNoRidge  3.603e+04  4.283e+03   8.414  < 2e-16 ***
+NeighborhoodNridgHt  2.528e+04  3.470e+03   7.284 5.40e-13 ***
+NeighborhoodNWAmes  -1.073e+04  3.060e+03  -3.505 0.000471 ***
+NeighborhoodStoneBr  4.185e+04  5.042e+03   8.299 2.45e-16 ***
+Condition1Norm       8.477e+03  1.868e+03   4.538 6.17e-06 ***
+Condition2PosN      -2.213e+05  1.715e+04 -12.899  < 2e-16 ***
+BldgTypeTwnhs       -2.544e+04  3.881e+03  -6.556 7.75e-11 ***
+BldgTypeTwnhsE      -1.956e+04  2.634e+03  -7.427 1.92e-13 ***
+OverallQual          7.147e+03  8.546e+02   8.363  < 2e-16 ***
+OverallCond          6.359e+03  6.622e+02   9.603  < 2e-16 ***
+YearBuilt            4.348e+02  4.114e+01  10.569  < 2e-16 ***
+RoofMatlCompShg      6.343e+05  3.276e+04  19.363  < 2e-16 ***
+RoofMatlMembran      6.909e+05  4.146e+04  16.664  < 2e-16 ***
+RoofMatlMetal        6.574e+05  4.140e+04  15.879  < 2e-16 ***
+RoofMatlRoll         6.352e+05  4.031e+04  15.756  < 2e-16 ***
+RoofMatlTar.Grv      6.204e+05  3.290e+04  18.855  < 2e-16 ***
+RoofMatlWdShake      6.383e+05  3.438e+04  18.564  < 2e-16 ***
+RoofMatlWdShngl      6.798e+05  3.372e+04  20.157  < 2e-16 ***
+Exterior1stBrkFace   1.724e+04  3.514e+03   4.905 1.04e-06 ***
+MasVnrArea           1.486e+01  4.259e+00   3.489 0.000500 ***
+ExterQualGd         -1.928e+04  3.820e+03  -5.048 5.06e-07 ***
+ExterQualTA         -2.088e+04  4.013e+03  -5.204 2.25e-07 ***
+BsmtQualEx          -1.490e+04  5.118e+03  -2.911 0.003659 ** 
+BsmtQualFa          -2.175e+04  2.689e+03  -8.091 1.28e-15 ***
+BsmtQualGd          -1.964e+04  3.107e+03  -6.323 3.44e-10 ***
+BsmtExposureAv       1.904e+04  2.451e+03   7.767 1.54e-14 ***
+BsmtFinSF1           3.963e+01  3.247e+00  12.205  < 2e-16 ***
+BsmtFinSF2           2.736e+01  4.814e+00   5.683 1.61e-08 ***
+BsmtUnfSF            2.188e+01  3.190e+00   6.859 1.04e-11 ***
+X1stFlrSF            5.153e+01  4.124e+00  12.493  < 2e-16 ***
+X2ndFlrSF            5.415e+01  2.949e+00  18.361  < 2e-16 ***
+BedroomAbvGr        -5.602e+03  1.173e+03  -4.777 1.97e-06 ***
+KitchenAbvGr        -2.593e+04  3.238e+03  -8.007 2.45e-15 ***
+KitchenQualFa       -2.323e+04  5.290e+03  -4.392 1.21e-05 ***
+KitchenQualGd       -2.458e+04  3.224e+03  -7.624 4.52e-14 ***
+KitchenQualTA       -2.638e+04  3.593e+03  -7.342 3.56e-13 ***
+TotRmsAbvGrd         2.417e+03  8.503e+02   2.843 0.004535 ** 
+FunctionalTyp        1.365e+04  2.651e+03   5.150 2.98e-07 ***
+GarageCars           8.352e+03  1.413e+03   5.911 4.27e-09 ***
+GarageQualEx        -1.123e+05  2.648e+04  -4.243 2.35e-05 ***
+GarageQualFa        -9.879e+04  2.708e+04  -3.648 0.000274 ***
+GarageQualGd        -1.201e+05  3.210e+04  -3.741 0.000191 ***
+GarageQualPo        -1.089e+05  2.624e+04  -4.149 3.54e-05 ***
+GarageCondEx         9.706e+04  2.694e+04   3.603 0.000326 ***
+GarageCondFa         8.441e+04  2.787e+04   3.029 0.002502 ** 
+GarageCondGd         1.036e+05  2.932e+04   3.535 0.000421 ***
+GarageCondPo         9.904e+04  2.657e+04   3.727 0.000201 ***
+WoodDeckSF           1.594e+01  5.403e+00   2.949 0.003236 ** 
+ScreenPorch          3.583e+01  1.155e+01   3.101 0.001965 ** 
+PoolArea             2.373e+02  3.154e+01   7.524 9.50e-14 ***
+PoolQCEx            -1.388e+05  2.487e+04  -5.579 2.90e-08 ***
+PoolQCFa            -9.574e+04  2.683e+04  -3.568 0.000371 ***
+SaleTypeNew          2.531e+04  3.301e+03   7.668 3.25e-14 ***
+SaleConditionNormal  8.835e+03  2.148e+03   4.114 4.12e-05 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 22880 on 1396 degrees of freedom
+Multiple R-squared:  0.9207,	Adjusted R-squared:  0.9171 
+F-statistic: 257.1 on 63 and 1396 DF,  p-value: < 2.2e-16
