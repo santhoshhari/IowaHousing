@@ -27,13 +27,16 @@ best.lambda
 
 #best lambda = 5838.57
 
+#calculate MSPE
 EN.pred <- predict(EN.model.train, s = best.lambda, newx = x[test,])
 mspe.EN <- mean((EN.pred - y.test)^2)
 mspe.EN
 
-#CV loop across diff test/train k-fold?
+#need to CV loop across diff test/train k-fold to get average MSPE?
 
+#code to fit final model
 finalmodel <- glmnet(x,y, alpha = 0.5, lambda = best.lambda)
+#get coefficients
 coef_elastic <- coef(finalmodel)
 
 
