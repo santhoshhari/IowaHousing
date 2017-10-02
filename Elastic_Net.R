@@ -34,5 +34,6 @@ mspe.EN
 #CV loop across diff test/train k-fold?
 
 finalmodel <- glmnet(x,y, alpha = 0.5, lambda = best.lambda)
+coef_elastic <- coef(finalmodel)
 
 
