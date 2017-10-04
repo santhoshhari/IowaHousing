@@ -1,0 +1,423 @@
+---
+title: 'Linear Regression Analysis: <br> Regression Case Study'
+author: "Neerja Doshi, Sri Santhosh Hari, Ker-Yu Ong, Nicha Ruchirawat"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE, tidy.opts=list(width.cutoff=65),tidy=TRUE)
+
+# Clear working environment
+rm(list=ls())
+
+# Load requisite packages 
+if(!require("tidyverse")){install.packages("tidyverse", repos = "http://cran.us.r-project.org")}
+if(!require("glmnet")){install.packages("glmnet", repos = "http://cran.us.r-project.org")}
+if(!require("ggplot2")){install.packages("ggplot2", repos = "http://cran.us.r-project.org")}
+if(!require("magrittr")){install.packages("magrittr", repos = "http://cran.us.r-project.org")}
+if(!require("gridExtra")){install.packages("gridExtra", repos = "http://cran.us.r-project.org")}
+if(!require("olsrr")){install.packages("olsrr", repos = "http://cran.us.r-project.org")}
+
+# Turn off scientific notation
+options(scipen=999)
+
+```
+
+# Part 0: Exploratory Data Analysis
+
+```{r}
+rawDF <- read.csv("/Users/booranium/usf/601_regression/project/housing.txt", stringsAsFactors = T)
+#rawDF <- read.csv("/Users/santhoshhari/Documents/Coursework/LinearRegression/IowaHousing/Data/housing.txt", stringsAsFactors = T)
+```
+
+## Structure of Data:
+
+The Iowa housing dataset contains `r dim(rawDF)[1]` rows and `r dim(rawDF)[2]` variables, a glimpse of which is as follows: 
+
+```{r}
+str(rawDF)
+```
+
+At first glance, we see that most of the variables are categorical - both numeric and character types - and only a handful are continuous. The response variable for our analysis is `SalePrice`, and the remaining 79 variables (excluding the record `ID` column) are considered potential predictor variables. Checking the data dictionary, we found the following distribution for the predictor variables:
+
+* 49 categorical
+* 19 are continuous, e.g. area, price 
+* 11 are discrete, e.g. count, year 
+
+There are `r nrow(rawDF) - nrow(unique(rawDF))` duplicate rows in the dataset.
+
+## Handling `NA` Values
+
+Below, we compute that number and percentage of `NA`s per variable in the dataset having at least 1 `NA`.
+
+```{r}
+NA_columns <- colnames(rawDF)[unique(which(is.na(rawDF), arr.ind = T)[,2])]
+
+NA_count <- rawDF %>%
+            select(NA_columns) %>%
+            summarise_all(funs(sum(is.na(.)))) %>%
+            gather(key = "Variable", value = "num_na", everything()) %>%
+            arrange(desc(num_na))
+
+NA_count %<>% mutate(perc_na = paste(round(num_na/nrow(rawDF),4)*100,"%"))
+colnames(NA_count) <- c("**Variable**", "**Number of NA**", "**Percentage of NA**")
+row.names(NA_count) <- NULL
+knitr::kable(NA_count, caption = "\\label{tab:NACount} Variable NA Count and Percentage",
+format.args = list(big.mark = ','))
+```
+
+
+The data dictionary tells us that for most of the fields in Table \ref{tab:NACount}, `NA` is actually meaningful, indicating non-applicability or a lack of the feature rather than missing data. After checking the data dictionary for the meaning of each field, we imputed - for every categorical variable for which `NA` was meaningful - `NA`s with `0`s.
+
+
+```{r}
+# Create a copy of rawDF to be our working data frame
+housingDF <- rawDF 
+
+# Update NAs with 0s for applicable fields
+levels(housingDF$PoolQC) <- c("0",levels(housingDF$PoolQC))
+housingDF$PoolQC[is.na(housingDF$PoolQC)] <- "0"
+levels(housingDF$MiscFeature) <- c("0", levels(housingDF$MiscFeature))
+housingDF$MiscFeature[is.na(housingDF$MiscFeature)] <- "0"
+levels(housingDF$Alley) <- c("0", levels(housingDF$Alley))
+housingDF$Alley[is.na(housingDF$Alley)] <- "0"
+levels(housingDF$Fence) <- c("0", levels(housingDF$Fence))
+housingDF$Fence[is.na(housingDF$Fence)] <- "0"
+levels(housingDF$FireplaceQu) <- c("0", levels(housingDF$FireplaceQu))
+housingDF$FireplaceQu[is.na(housingDF$FireplaceQu)] <- "0"
+levels(housingDF$GarageType) <- c("0", levels(housingDF$GarageType))
+housingDF$GarageType[is.na(housingDF$GarageType)] <- "0"
+levels(housingDF$GarageFinish) <- c("0", levels(housingDF$GarageFinish))
+housingDF$GarageFinish[is.na(housingDF$GarageFinish)] <- "0"
+levels(housingDF$GarageQual) <- c("0", levels(housingDF$GarageQual))
+housingDF$GarageQual[is.na(housingDF$GarageQual)] <- "0"
+levels(housingDF$GarageCond) <- c("0", levels(housingDF$GarageCond))
+housingDF$GarageCond[is.na(housingDF$GarageCond)] <- "0"
+levels(housingDF$BsmtExposure) <- c("0", levels(housingDF$BsmtExposure))
+housingDF$BsmtExposure[is.na(housingDF$BsmtExposure)] <- "0"
+levels(housingDF$BsmtFinType2) <- c("0", levels(housingDF$BsmtFinType2))
+housingDF$BsmtFinType2[is.na(housingDF$BsmtFinType2)] <- "0"
+levels(housingDF$BsmtQual) <- c("0", levels(housingDF$BsmtQual))
+housingDF$BsmtQual[is.na(housingDF$BsmtQual)] <- "0"
+levels(housingDF$BsmtCond) <- c("0", levels(housingDF$BsmtCond))
+housingDF$BsmtCond[is.na(housingDF$BsmtCond)] <- "0"
+levels(housingDF$BsmtFinType1) <- c("0", levels(housingDF$BsmtFinType1))
+housingDF$BsmtFinType1[is.na(housingDF$BsmtFinType1)] <- "0"
+```
+
+We then re-check the count and percentage of `NA`s per variable left in the dataset.
+
+```{r}
+NA_columns <- colnames(housingDF)[unique(which(is.na(housingDF), arr.ind = T)[,2])]
+NA_count <- housingDF %>%
+            select(NA_columns) %>%
+            summarise_all(funs(sum(is.na(.)))) %>%
+            gather(key = "Variable", value = "num_na", everything()) %>%
+            arrange(desc(num_na))
+
+NA_count %<>% mutate(perc_na = paste(round(num_na/nrow(housingDF),4)*100,"%"))
+colnames(NA_count) <- c("**Variable**", "**Number of NA**", "**Percentage of NA**")
+row.names(NA_count) <- NULL
+knitr::kable(NA_count, caption = "\\label{tab:NACount1} Variable NA Count and Percentage(after replacing NAs with 0s, where appropriate)",
+format.args = list(big.mark = ','))
+```
+
+Table \ref{tab:NACount1} shows the list of remaining variables where `NA` indicates missing data. We impute `NA`s in these variables with
+
+* mean of the data, for continuous variables (LotFrontage)
+* median of the data, for discrete variables (GarageYrBlt)
+* mode of the data, for categorical variables (MasVnrType, Electrical)
+
+```{r}
+# Function to get mode of data
+getmode <- function(v) {
+  uniqv <- unique(v)
+  uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+
+# Impute NAs 
+housingDF$LotFrontage[is.na(housingDF$LotFrontage)] <- mean(housingDF$LotFrontage, na.rm = T)
+housingDF$GarageYrBlt[is.na(housingDF$GarageYrBlt)] <- median(housingDF$GarageYrBlt, na.rm=T)
+housingDF$MasVnrType[is.na(housingDF$MasVnrType)] <- getmode(housingDF$MasVnrType)
+housingDF$MasVnrArea[is.na(housingDF$MasVnrArea)] <- 0
+housingDF$Electrical[is.na(housingDF$Electrical)] <- getmode(housingDF$Electrical)
+```
+
+Since Masonry veneer area (`MasVnrArea`) is directly related to `MasVnrType`, we impute for area based on the mode of `MasVnrType`, which is `r getmode(housingDF$MasVnrType)`. Our cleaned dataset is named `housingDF`. 
+
+
+## Data Visualization
+
+With our clean dataset, we perform exploratory data visualization of the distribution of key measures such as volume and sale price of houses by what we hypothesize to be key predictor variables.
+
+To begin with, we check the distribution of sale prices using a histogram and box-plot.
+
+```{r}
+#hist(housingDF$SalePrice, main = "Histogram of Sale Price")
+#boxplot(housingDF$SalePricem, main = "Boxplot of Sale Price")
+summary(housingDF$SalePrice)
+```
+
+
+Intuition suggests the neighborhood is a key determining factor in a house's sale price, hence below, we plot the distribution of sale price by neighborhood. 
+
+
+```{r, fig.cap="\\label{fig:box1} SalePrice distribution per neighborhood"}
+housingDF %>% 
+  select(Neighborhood, SalePrice) %>% 
+  ggplot(aes(factor(Neighborhood), SalePrice)) + 
+  geom_boxplot() + 
+  theme(axis.text.x = element_text(angle = 90, hjust =1)) + 
+  xlab('Neighborhoods')
+```
+
+From Figure \ref{fig:box1}, we can observe that Brookside and Meadow Vista have the lowest median house price while Northridge and Northridge Height have the heighest median house price as well as several outliers.
+
+We then distribution of houses by a number of key features we hypothesize to be important in determining housing price: the property's zoning class (`MSZoning`), type of road access to the property (`Street`), type of alley access to the property (`Alley`), and type of utilies available (`Utilities`)
+
+```{r}
+plotHist <- function(data_in, i) {
+  data <- data.frame(x=data_in[[i]])
+  p <- ggplot(data=data, aes(x=factor(x))) +
+       stat_count() +
+       xlab(colnames(data_in)[i]) +
+       theme_light() + 
+       theme(axis.text.x = element_text(angle = 90, hjust =1))
+  return (p)
+}
+
+doPlots <- function(data_in, fun, ii, ncol=3) {
+  pp <- list()
+  for (i in ii) {
+    p <- fun(data_in=data_in, i=i)
+    pp <- c(pp, list(p))
+  }
+  do.call("grid.arrange", c(pp, ncol=ncol))
+}
+
+plotDen <- function(data_in, i){
+  data <- data.frame(x=data_in[[i]], SalePrice = data_in$SalePrice)
+  p <- ggplot(data= data) + 
+       geom_line(aes(x = x), stat = 'density', size = 1,alpha = 1.0) +
+       xlab(paste0((colnames(data_in)[i]), '\n', 'Skewness: ',
+                   round(skewness(data_in[[i]], na.rm = TRUE), 2))) +
+       theme_light() 
+  return(p)
+}
+
+plotCorr <- function(data_in, i){
+  data <- data.frame(x = data_in[[i]], SalePrice = data_in$SalePrice)
+  p <- ggplot(data, aes(x = x, y = SalePrice)) + 
+    geom_point(na.rm = TRUE) + 
+    geom_smooth(method = lm ) + 
+    xlab(paste0(colnames(data_in)[i], '\n', 'R-Squared: ',
+                round(cor(data_in[[i]], data$SalePrice, use = 'complete.obs'), 2))) +
+    theme_light()
+  return(suppressWarnings(p))
+}
+```
+
+```{r, fig.cap="\\label{fig:hist1}Locality, access, utility features distribution"}
+doPlots(housingDF, fun = plotHist, ii = c(3,6,7,10), ncol = 2)
+```
+
+Figure \ref{fig:hist1} suggests that most of the houses are located in `Medium/Low Density` residential areas. We can also observe that most of the houses have paved road access, do not have alleys and have all public utilities(E,G,W,& S). From Figure \ref:{fig:hist2}, we can notice that most of the properties are regular or slightly irregular in share, built on level surfaces with gentle slope. 
+
+We also plot the distribution of houses against a number of features related to the physical geography of the property:
+
+```{r, fig.cap="\\label{fig:hist2}Lot/Land feature distribution"}
+doPlots(housingDF, fun = plotHist, ii = c(8,9,11,12), ncol = 2)
+```
+
+We see that ...
+
+```{r, fig.cap="\\label{fig:hist3} Neighborhood level slope distribution"}
+housingDF %>% 
+  select(LandSlope, Neighborhood) %>% 
+  arrange(Neighborhood) %>% 
+  group_by(Neighborhood, LandSlope) %>% 
+  summarize(Count = n()) %>% 
+  ggplot(aes(Neighborhood, Count)) + 
+  geom_bar(aes(fill = LandSlope), position = 'dodge', stat = 'identity')+
+  theme(axis.text.x = element_text(angle = 90, hjust =1))
+```
+
+From Figure \ref:{fig:hist3}, we can see that houses with severe slope are located only in Clear Creek and Timberland while more than 10 neighborhoods have properties with moderate slope.
+
+
+##  Testing for Influential Points 
+
+Having dealt with the `NA`s in our dataset, we use the `model.matrix()` function from the `glmnet` package to convert each categorical variable into an appropriate set of binary indicators: for a categorical variable that takes k levels, `model.matrix()` produces k-1 binary indicators. We then reappend our response vector `SalePrice` to the resulting wide design matrix `designDF` to create `workingDF`, which includes both the converted predictors and response variables.
+
+```{r}
+designDF <- model.matrix(SalePrice ~ ., data = housingDF)[,-1]
+designDF <- as.data.frame(designDF)
+workingDF <- cbind(designDF, SalePrice = housingDF$SalePrice)
+```
+
+
+In looking for influential points, we leverage the `OLSRR` package to test observations for influence according to both the DFFITS and studentized residuals criterions. We do this by first fitting a saturated model on `workingDF` and then calling `ols_dffits_plot()` and `ols_srsd_plot()` to plot the DFFITS and studentized residuals plots respectively.  
+
+```{r}
+
+ols_model <- lm(SalePrice ~ ., data = workingDF)
+ols_dffits_plot(ols_model)
+```
+
+The DFFITS plot shows 5 influential observations - 198, 418, 524, 826 and 1183 - with observations 524 and 826 being the most outstanding. This is corroborated by the studentized residuals plot, as shown below:
+
+```{r}
+ols_srsd_chart(ols_model)
+```
+
+As a remedial measure, we investigate data points 524 and 826 per the original dataset: 
+
+```{r}
+filter(workingDF, Id == 524 | Id == 826)
+```
+
+Specifically, let's look at the values they take on a number of continuous variables as compared to other observations.
+
+`SalePrice`:
+```{r}
+plot(workingDF$Id, workingDF$SalePrice, col = ifelse(workingDF$Id == 524 | workingDF$Id == 826, "red", "black"), pch = ifelse(workingDF$Id == 524 | workingDF$Id == 826, 19, 1), xlab = "ID", ylab = "Sale Price")
+```
+`OverallQual`: they are in the bucket of 'Excellent' overall material and finish of the house. 
+```{r}
+plot(workingDF$Id, workingDF$OverallQual, col = ifelse(workingDF$Id == 524 | workingDF$Id == 826, "red", "black"), pch = ifelse(workingDF$Id == 524 | workingDF$Id == 826, 19, 1), xlab = "ID", ylab = "Sale Price")
+```
+
+`YearBuilt`: they appear to be recently built 
+```{r}
+plot(workingDF$Id, workingDF$YearBuilt, col = ifelse(workingDF$Id == 524 | workingDF$Id == 826, "red", "black"), pch = ifelse(workingDF$Id == 524 | workingDF$Id == 826, 19, 1), xlab = "ID", ylab = "Sale Price")
+```
+In fact: the difference between the year built and year sold for these two houses is small compared to the same difference for other houses:
+
+Plot of year built vs. year sold - the two observations appear to be both built and sold recently
+
+```{r}
+plot(workingDF$Id, workingDF$YrSold-workingDF$YearBuilt, col = ifelse(workingDF$Id == 524 | workingDF$Id == 826, "red", "black"), pch = ifelse(workingDF$Id == 524 | workingDF$Id == 826, 19, 1), xlab = "ID", ylab = "Years", main = "Plot of Years Between House Built vs. Sold")
+```
+
+`LotArea`: Relatively large 
+```{r}
+plot(workingDF$Id, workingDF$LotArea, col = ifelse(workingDF$Id == 524 | workingDF$Id == 826, "red", "black"), pch = ifelse(workingDF$Id == 524 | workingDF$Id == 826, 19, 1), xlab = "ID", ylab = "Sale Price")
+```
+
+`GarageArea`: Relatively large 
+```{r}
+plot(workingDF$Id, workingDF$GarageArea, col = ifelse(workingDF$Id == 524 | workingDF$Id == 826, "red", "black"), pch = ifelse(workingDF$Id == 524 | workingDF$Id == 826, 19, 1), xlab = "ID", ylab = "Sale Price")
+```
+
+```{r}
+plot(workingDF$Id, workingDF$TotalBsmtSF, col = ifelse(workingDF$Id == 524 | workingDF$Id == 826, "red", "black"), pch = ifelse(workingDF$Id == 524 | workingDF$Id == 826, 19, 1), xlab = "ID", ylab = "Sale Price")
+```
+
+
+We can now plot the distribution of values for the variables in our `workingDF` and spotcheck for outliers:
+
+```{r, eval = FALSE}
+cols <- colnames(workingDF)
+
+for (c in cols){
+  print(c)
+  data <- workingDF[[c]]
+  plot(data)
+}
+```
+
+# Part I: Explanatory Modelling
+
+For the purposes of variable selection, we refer to the saturated OLS model created above and perform stepwise model selection according to both AIC and BIC criterions.
+
+```{r, eval = FALSE}
+# Code chunk not run; load saved model for expediency 
+model_aic <- step(ols_model, direction = 'backward', trace = F) 
+model_bic <- step(ols_model, k = log(nrow(workingDF)), direction = 'backward', trace = F) 
+
+## save the models 
+save(model_aic, file = "/Users/booranium/usf/601_regression/project/IowaHousing/AIC_model_v2.rda")
+save(model_bic, file = "/Users/booranium/usf/601_regression/project/IowaHousing/BIC_model_v2.rda")
+```
+
+Per the AIC criterion, the following are the predictor variables signficant at the alpha = 0.05 level.
+
+```{r}
+load("/Users/booranium/usf/601_regression/project/IowaHousing/AIC_model_v2.rda") # model loaded as 'model_aic' 
+
+# Find coefficients significant at the alpha = 0.05 level
+bool_aic <- summary(model_aic)$coeff[-1,4] < 0.05
+sig_var_aic <- names(bool_aic)[bool_aic == TRUE]
+```
+
+Per the BIC criterion, the following are the predictor variables signficant at the alpha = 0.05 level.
+
+```{r}
+load("/Users/booranium/usf/601_regression/project/IowaHousing/BIC_model.rda") # model loaded as 'model_bic'
+
+# find coefficients significant at the alpha = 0.05 level
+bool_bic <- summary(model_aic)$coeff[-1,4] < 0.05
+sig_var_bic <- names(bool_bic)[bool_bic == TRUE]
+```
+
+Note that that both criterions select the same set of variables.
+```{r}
+setdiff(sig_var_aic, sig_var_bic)
+```
+
+We can now perform OLS regression with our subset of significant variables. The model summary is as follows:
+
+```{r}
+model_sig_formula <- as.formula(paste("SalePrice ~ ", paste(sig_var_bic, collapse = "+")))
+model_sig <- lm(formula = model_sig_formula, data = workingDF)
+model_sig_rsq <- summary(model_sig)$r.squared # r-squared value 
+```
+
+At first glance, the multiple R-squared value of `r model_sig_rsq` indicates that 91.19% of the variability in SalePrice around its mean is explained by the mode, i.e. by the predictor variables that have been included. This suggests a high-performing explanatory model. We test this conclusion by checking the residuals of the model as follows: 
+
+
+```{r}
+# Residual plots 
+
+res = resid(model_sig) # residuals 
+stdres = rstandard(model_sig) # standardized residuals 
+
+# Plot of residuals vs. fitted values 
+plot(workingDF$SalePrice, res, main = "Plot of Residuals vs. Sale Price", xlab = "Sale Price", ylab = "Residual")
+abline(h=c(0,0), col = 'red')
+abline(v=350000, col = 'blue')
+
+# Normal Probability Plot of Residuals
+qqnorm(stdres, main = "QQ Plot of Standardized Residuals", xlab = "Normal Scores", ylab = "Standardized Residual")
+qqline(stdres)
+```
+
+The residual plot shows that for the most part, the residuals are evenly distributed across the y = 0 line. However, we see that as Sale Price increases, the residuals start to deviate homoscedasticity. More specifically, we see this deviation happen at approximately Sale Price = $350K, which our earlier summary showed to be between the variable's 3rd quartile and maximum. This suggets that for the last quartile of high-priced houses, the fitted regression model is not as adequate as it is for the reset of the population. The normal probability (QQ) plot corroborates this finding: it shows deviance from linearity at both tail ends of the residual range.
+
+As a remedial measure, we perform a log transformation on Sale Price, refit the model, and examine the resulting residuals.
+
+```{r}
+# Log Transformation
+log_model_formula <- as.formula(paste("log(SalePrice) ~ ", paste(sig_var_bic, collapse = "+")))
+log_model <- lm(formula = log_model_formula, data = workingDF)
+log_model_rsq <- summary(log_model)$r.squared # r-squared value 
+
+res_log = resid(log_model) # residuals 
+stdres_log = rstandard(log_model) # standardized residuals 
+
+# Plot of Residuals from Log Model vs. Fitted Values 
+plot(log(workingDF$SalePrice), res_log, main = "Plot of Log Model Residuals vs. Log of Sale Price", xlab = "Log of Sale Price", ylab = "Residual")
+abline(h=c(0,0), col = 'red')
+abline(v=350000, col = 'blue')
+
+# Normal Probability Plot of Residuals from Log Model
+qqnorm(stdres_log, main = "QQ Plot of Standardized Log Model Residuals", xlab = "Normal Scores", ylab = "Standardized Residual")
+qqline(stdres_log)
+
+```
+
+Our new model produces an R-squared value of `r log_model_rsq`. Our plots of residuals vs. fitted values and the normal probability of the standardized residuals also show better patterns of homoscedasticity and normality respectively. 
+
+# Part II: Predictive Modelling
