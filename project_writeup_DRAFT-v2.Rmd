@@ -21,6 +21,8 @@ if(!require("gridExtra")){install.packages("gridExtra", repos = "http://cran.us.
 if(!require("olsrr")){install.packages("olsrr", repos = "http://cran.us.r-project.org")}
 if(!require("data.table")){install.packages("data.table", repos = "http://cran.us.r-project.org")}
 if(!require("MASS")){install.packages("MASS", repos = "http://cran.us.r-project.org")}
+if(!require("car")){install.packages("car", repos = "http://cran.us.r-project.org")}
+if(!require("perturb")){install.packages("perturb", repos = "http://cran.us.r-project.org")}
 
 # Turn off scientific notation
 options(scipen=999)
@@ -32,8 +34,8 @@ options(scipen=999)
 ## Task 0: Exploratory Data Analysis and Data Cleaning
 
 ```{r}
-rawDF <- read.csv("/Users/booranium/usf/601_regression/project/housing.txt", stringsAsFactors = T)
-#rawDF <- read.csv("/Users/santhoshhari/Documents/Coursework/LinearRegression/IowaHousing/Data/housing.txt", stringsAsFactors = T)
+#rawDF <- read.csv("/Users/booranium/usf/601_regression/project/housing.txt", stringsAsFactors = T)
+rawDF <- read.csv("/Users/santhoshhari/Documents/Coursework/LinearRegression/IowaHousing/Data/housing.txt", stringsAsFactors = T)
 ```
 
 The Iowa housing dataset contains `r dim(rawDF)[1]` rows and `r dim(rawDF)[2]` variables, a glimpse of which is as follows: 
@@ -149,6 +151,7 @@ housingDF$Electrical[is.na(housingDF$Electrical)] <- getmode(housingDF$Electrica
 
 # Convert MSSubClass to factor
 housingDF$MSSubClass <- factor(housingDF$MSSubClass)
+housingDF$MoSold <- factor(housingDF$MoSold)
 ```
 
 Since Masonry veneer area (`MasVnrArea`) is directly related to `MasVnrType`, we impute for area based on the mode of `MasVnrType`, which is `r getmode(housingDF$MasVnrType)`. Our cleaned dataset is named `housingDF`. 
@@ -213,30 +216,28 @@ plotDen <- function(data_in, i){
 plotCorr <- function(data_in, i){
   data <- data.frame(x = data_in[[i]], SalePrice = data_in$SalePrice)
   p <- ggplot(data, aes(x = x, y = SalePrice)) + 
-    geom_point(na.rm = TRUE) + 
-    geom_smooth(method = lm ) + 
-    xlab(paste0(colnames(data_in)[i], '\n', 'R-Squared: ',
+       geom_point(na.rm = TRUE) + 
+       geom_smooth(method = lm ) + 
+       xlab(paste0(colnames(data_in)[i], '\n', 'R-Squared: ',
                 round(cor(data_in[[i]], data$SalePrice, use = 'complete.obs'), 2))) +
-    theme_light()
+       theme_light()
   return(suppressWarnings(p))
 }
 ```
 
-```{r, fig.cap="\\label{fig:hist1}Locality, access, utility features distribution"}
+```{r, fig.height=3.5, fig.cap="\\label{fig:hist1}Locality, access, utility features distribution"}
 doPlots(housingDF, fun = plotHist, ii = c(3,6,7,10), ncol = 2)
+```
+
+We also plot the distribution of houses against a number of features related to the physical geography of the property:
+
+```{r, fig.height=3.5, fig.cap="\\label{fig:hist2}Lot/Land feature distribution"}
+doPlots(housingDF, fun = plotHist, ii = c(8,9,11,12), ncol = 2)
 ```
 
 Figure \ref{fig:hist1} suggests that most of the houses are located in `Medium/Low Density` residential areas. We can also observe that most of the houses have paved road access, do not have alleys and have all public utilities(E,G,W,& S). From Figure \ref:{fig:hist2}, we can notice that most of the properties are regular or slightly irregular in share, built on level surfaces with gentle slope. 
 
-We also plot the distribution of houses against a number of features related to the physical geography of the property:
-
-```{r, fig.cap="\\label{fig:hist2}Lot/Land feature distribution"}
-doPlots(housingDF, fun = plotHist, ii = c(8,9,11,12), ncol = 2)
-```
-
-We see that ...
-
-```{r, fig.cap="\\label{fig:hist3} Neighborhood level slope distribution"}
+```{r, fig.height=3.5, fig.cap="\\label{fig:hist3} Neighborhood level slope distribution"}
 housingDF %>% 
   dplyr::select(LandSlope, Neighborhood) %>% 
   arrange(Neighborhood) %>% 
@@ -248,6 +249,15 @@ housingDF %>%
 ```
 
 From Figure \ref:{fig:hist3}, we can see that houses with severe slope are located only in Clear Creek and Timberland while more than 10 neighborhoods have properties with moderate slope.
+
+```{r, fig.height=8, fig.cap="\\label{fig:hist3} Scatter plot of variables showing high positive  linear relationship with SalePrice"}
+num_var <- names(housingDF)[which(sapply(housingDF, is.numeric))]
+housing_numeric <- housingDF[num_var]
+correlations <- cor(housing_numeric[,-1])
+highcorr <- c(names(correlations[,'SalePrice'])[which(correlations[,'SalePrice'] > 0.5)], names(correlations[,'SalePrice'])[which(correlations[,'SalePrice'] < -0.2)])
+data_corr <- housingDF[highcorr]
+doPlots(data_corr, fun = plotCorr, ii = 1:10)
+```
 
 ## Task 1. Building the Explanatory Model
 
@@ -332,7 +342,8 @@ save(model_bic, file = "/Users/booranium/usf/601_regression/project/IowaHousing/
 Per the AIC criterion, the following are the predictor variables signficant at the alpha = 0.05 level.
 
 ```{r}
-load("/Users/booranium/usf/601_regression/project/IowaHousing/AIC_model.rda") # model loaded as 'model_aic' 
+#load("/Users/booranium/usf/601_regression/project/IowaHousing/AIC_model.rda") # model loaded as 'model_aic' 
+load("/Users/santhoshhari/Documents/Coursework/LinearRegression/IowaHousing/AIC_model.rda") # model loaded as 'model_aic' 
 
 # Find coefficients significant at the alpha = 0.01 level
 bool_aic <- summary(model_aic)$coeff[-1,4] < 0.01
@@ -343,7 +354,8 @@ length(sig_var_aic)
 Per the BIC criterion, the following are the predictor variables signficant at the alpha = 0.05 level.
 
 ```{r}
-load("/Users/booranium/usf/601_regression/project/IowaHousing/BIC_model.rda") # model loaded as 'model_bic'
+#load("/Users/booranium/usf/601_regression/project/IowaHousing/BIC_model.rda") # model loaded as 'model_bic'
+load("/Users/santhoshhari/Documents/Coursework/LinearRegression/IowaHousing/BIC_model.rda") # model loaded as 'model_bic' 
 
 # find coefficients significant at the alpha = 0.01 level
 bool_bic <- summary(model_aic)$coeff[-1,4] < 0.01
@@ -368,8 +380,6 @@ model_sig_scaled <- lm(formula = model_sig_formula, data = as.data.frame(scale(w
 We check for multicollinearity in our model by checking for Variance Inflation Factors:
 
 ```{r}
-library(car)
-library(perturb)
 vif(model_sig_scaled)[(sqrt(vif(model_sig_scaled)) > 10) == TRUE]
 ```
 We see that there are two variables with VIF values > threshold = 10. This tells us there is multicollinearity present in the dataset. We verify this by checking the Singular Value Criteria for multicollinearity: 
@@ -489,7 +499,8 @@ We conclude that the variables included above are most relevant in determining a
 ## Task 2: Making recommendations
 
 ```{r}
-morty <- read.csv("/Users/booranium/usf/601_regression/project/Morty.txt", stringsAsFactors = T)
+#morty <- read.csv("/Users/booranium/usf/601_regression/project/Morty.txt", stringsAsFactors = T)
+morty <- read.csv("/Users/santhoshhari/Documents/Coursework/LinearRegression/IowaHousing/Data/Morty.txt", stringsAsFactors = T)
 sig_var_morty <- names(morty)[bool_bic == TRUE]
 sig_var_morty
 ```
