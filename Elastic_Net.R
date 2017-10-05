@@ -15,32 +15,35 @@ alphalist<-seq(0,1,by=0.1)
 
 #grid.lambda <- 10^seq(10, -2, length = 100)
 elasticnet<-lapply(alphalist, function(a){cv.glmnet(x[train, ], y.train, alpha=a)})
-for (i in 1:11) {print(min(elasticnet[[i]]$cvm)) 
-  print(i)}
+for (i in 1:11) {print(min(elasticnet[[i]]$cvm)) }
+
+
+lambdas = NULL
+for (i in 1:100)
+{
 cv.out <- cv.glmnet(x[train, ], y.train, alpha = 0.5)
+errors = data.frame(cv.out$lambda,cv.out$cvm)
+lambdas <- rbind(lambdas,errors)
 
-plot(cv.out)
-best.lambda <- cv.out$lambda.min
-best.lambda
-
-#best lambda = 5838.57
-
-#calculate MSPE
-mspe_elastic = list()
-for (i in 1:100){
-  EN.pred <- predict(cv.out, s = best.lambda, newx = x[test,])
-  mspe.EN <- mean((EN.pred - y.test)^2)
-  mspe_elastic <- c(mspe_elastic, sqrt(mspe.EN))
 }
 
-mean(unlist(mspe_elastic))
+plot(cv.out)
+# take mean cvm for each lambda
+lambdas <- aggregate(lambdas[, 2], list(lambdas$fit.lambda), mean)
+
+# select the best one
+bestindex = which(lambdas[2]==min(lambdas[2]))
+bestlambda = lambdas[bestindex,1]
+
+
+# Validation:
+elastic.pred <- predict(cv.out, s = bestlambda, newx = x[test,])
+mspe.elastic <- sqrt(mean((elastic.pred - y.test)^2))
+mspe.elastic
+length(coef(cv.out)[coef(cv.out)!= 0])
 
 #code to fit final model
-finalmodel <- glmnet(x,y, alpha = 0.5, lambda = best.lambda)
-#get coefficients
-coef_elastic <- coef(finalmodel)
-length(coef_elastic[coef_elastic!= 0])
-
+finalmodel <- glmnet(x,y, alpha = 0.5, lambda = bestlambda)
 
 
 #### Out of sample predictions:

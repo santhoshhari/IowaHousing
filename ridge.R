@@ -11,24 +11,26 @@ y.train <- y[train]
 y.test <- y[test]
 
 
-ridge<-cv.glmnet(x[train, ], y.train, alpha=0)
-plot(ridge)
-best.lambda <- cv.out$lambda.min
-best.lambda
 
 
 mspe_ridge = list()
+MSEs <- NULL
+
+
 for (i in 1:100){
-ridge.pred <- predict(ridge, s = best.lambda, newx = x[test,])
-mspe.ridge <- mean((ridge.pred - y.test)^2)
-mspe_ridge <- c(mspe_ridge, sqrt(mspe.ridge))
+ridge<-cv.glmnet(x[train, ], y.train, alpha=0)
+MSEs <- cbind(MSEs, ridge$cvm)
 }
 
-mean(unlist(mspe_ridge))
+rownames(MSEs) <- ridge$lambda
+lambda.min <- as.numeric(names(which.min(rowMeans(MSEs))))
 
+ridge.pred <- predict(ridge, s = lambda.min, newx = x[test,])
+mspe.ridge <- sqrt(mean((ridge.pred - y.test)^2))
+#mspe_ridge <- c(mspe_ridge, sqrt(mspe.ridge))
+mspe.ridge
 
-
-final_ridge <- glmnet(x,y, alpha = 0, lambda = best.lambda)
+final_ridge <- glmnet(x,y, alpha = 0, lambda = lambda.min)
 #get coefficients
 coef_ridge <- coef(final_ridge)
 
