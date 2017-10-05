@@ -58,7 +58,7 @@ Below, we compute that number and percentage of `NA`s per variable in the datase
 NA_columns <- colnames(rawDF)[unique(which(is.na(rawDF), arr.ind = T)[,2])]
 
 NA_count <- rawDF %>%
-            select(NA_columns) %>%
+            dplyr::select(NA_columns) %>%
             summarise_all(funs(sum(is.na(.)))) %>%
             gather(key = "Variable", value = "num_na", everything()) %>%
             arrange(desc(num_na))
@@ -111,8 +111,9 @@ We then re-check the count and percentage of `NA`s per variable left in the data
 
 ```{r}
 NA_columns <- colnames(housingDF)[unique(which(is.na(housingDF), arr.ind = T)[,2])]
-NA_count <- housingDF %>%
-            select(NA_columns) %>%
+
+NA_count <- housingDF %>% 
+            dplyr::select(NA_columns) %>%
             summarise_all(funs(sum(is.na(.)))) %>%
             gather(key = "Variable", value = "num_na", everything()) %>%
             arrange(desc(num_na))
@@ -122,6 +123,8 @@ colnames(NA_count) <- c("**Variable**", "**Number of NA**", "**Percentage of NA*
 row.names(NA_count) <- NULL
 knitr::kable(NA_count, caption = "\\label{tab:NACount1} Variable NA Count and Percentage(after replacing NAs with 0s, where appropriate)",
 format.args = list(big.mark = ','))
+
+colnames(housingDF)
 ```
 
 Table \ref{tab:NACount1} shows the list of remaining variables where `NA` indicates missing data. We impute `NA`s in these variables with
@@ -166,7 +169,7 @@ Intuition suggests the neighborhood is a key determining factor in a house's sal
 
 ```{r, fig.cap="\\label{fig:box1} SalePrice distribution per neighborhood"}
 housingDF %>% 
-  select(Neighborhood, SalePrice) %>% 
+  dplyr::select(Neighborhood, SalePrice) %>% 
   ggplot(aes(factor(Neighborhood), SalePrice)) + 
   geom_boxplot() + 
   theme(axis.text.x = element_text(angle = 90, hjust =1)) + 
@@ -235,7 +238,7 @@ We see that ...
 
 ```{r, fig.cap="\\label{fig:hist3} Neighborhood level slope distribution"}
 housingDF %>% 
-  select(LandSlope, Neighborhood) %>% 
+  dplyr::select(LandSlope, Neighborhood) %>% 
   arrange(Neighborhood) %>% 
   group_by(Neighborhood, LandSlope) %>% 
   summarize(Count = n()) %>% 
@@ -331,9 +334,10 @@ Per the AIC criterion, the following are the predictor variables signficant at t
 ```{r}
 load("/Users/booranium/usf/601_regression/project/IowaHousing/AIC_model.rda") # model loaded as 'model_aic' 
 
-# Find coefficients significant at the alpha = 0.05 level
-bool_aic <- summary(model_aic)$coeff[-1,4] < 0.05
+# Find coefficients significant at the alpha = 0.01 level
+bool_aic <- summary(model_aic)$coeff[-1,4] < 0.01
 sig_var_aic <- names(bool_aic)[bool_aic == TRUE]
+length(sig_var_aic)
 ```
 
 Per the BIC criterion, the following are the predictor variables signficant at the alpha = 0.05 level.
@@ -341,18 +345,17 @@ Per the BIC criterion, the following are the predictor variables signficant at t
 ```{r}
 load("/Users/booranium/usf/601_regression/project/IowaHousing/BIC_model.rda") # model loaded as 'model_bic'
 
-# find coefficients significant at the alpha = 0.05 level
-bool_bic <- summary(model_aic)$coeff[-1,4] < 0.05
+# find coefficients significant at the alpha = 0.01 level
+bool_bic <- summary(model_aic)$coeff[-1,4] < 0.01
 sig_var_bic <- names(bool_bic)[bool_bic == TRUE]
 ```
 
 Note that both criterions select the same set of variables.
 ```{r}
 setdiff(sig_var_aic, sig_var_bic)
-sig_var_bic
 ```
 
-We can now perform OLS regression with our subset of significant variables. The model summary is as follows:
+We can now perform OLS regression with our subset of `r length(sig_var_bic)` significant variables. The model summary is as follows:
 
 ```{r}
 model_sig_formula <- as.formula(paste("SalePrice ~ ", paste(sig_var_bic, collapse = "+")))
@@ -367,35 +370,65 @@ We check for multicollinearity in our model by checking for Variance Inflation F
 ```{r}
 library(car)
 library(perturb)
-vif(model_sig_scaled)
 vif(model_sig_scaled)[(sqrt(vif(model_sig_scaled)) > 10) == TRUE]
 ```
 We see that there are two variables with VIF values > threshold = 10. This tells us there is multicollinearity present in the dataset. We verify this by checking the Singular Value Criteria for multicollinearity: 
 
 ```{r}
 coll_out = colldiag(model_sig, scale = TRUE, center = FALSE, add.intercept = TRUE)
-coll_out$condindx[coll_out$condindx > 30]
-
+coll_out$condindx[(coll_out$condindx > 30)== TRUE]
 ```
-
 We see that there are several entries > threshold = 30, and hence we conclude that multicollinearity exists. In order to identify which variables are multicollinear:
 
 ```{r}
-coll_out$pi[coll_out$pi > 0.75]
+coll_out = colldiag(model_sig, scale = TRUE, center = FALSE, add.intercept = TRUE)
+unlist(coll_out[1], use.names = F) >30
+colnames(coll_out$pi)[unlist(coll_out[1], use.names = F) >30]
+dim(as.matrix(coll_out$pi[unlist(coll_out[1], use.names = F) >30, ]))
+# 11 variabels with pi > 30
+
+pi = coll_out$pi[unlist(coll_out[1], use.names = F) >30, ]
+pi[pi < 0.75] <- NA
+pi
+```
+
+Based on results, we drop the Garage Condition variables since they are collinear with the Garage Quality variables.
+
+```{r}
+# Drop GarageCondition variables since they are correlated with Garage Quality variables 
+drop = c('GarageCondEx','GarageCondFa', 'GarageCondGd', 'GarageCondPo' )
+new_sig_var_bic = sig_var_bic [! sig_var_bic %in% drop]
+```
+
+We then rerun the model and recheck for multicollinearity using VIFS:
+
+```{r}
+new_model_formula <- as.formula(paste("SalePrice ~ ", paste(new_sig_var_bic, collapse = "+")))
+new_model <- lm(formula = new_model_formula, data = workingDF)
+
+# create a model with scaled Xs and Y for multicollinearity detection 
+new_model_scaled <- lm(formula = new_model_formula, data = as.data.frame(scale(workingDF)))
+
+# check for MC
+vif(new_model_scaled)[(sqrt(vif(new_model_scaled)) > 10) == TRUE]
+```
+
+Using our rule of thumb, we conclude that there is no more multicollinearity in our model since there are no VIF values > 10. We print the summary of our model below:
+
+```{r}
+summary(new_model)
 ```
 
 
-
-At first glance, the multiple R-squared value of `r model_sig_rsq` indicates that 91.19% of the variability in SalePrice around its mean is explained by the mode, i.e. by the predictor variables that have been included. This suggests a high-performing explanatory model. 
+At first glance, the multiple R-squared value of 0.9293 indicates that 92.93% of the variability in SalePrice around its mean is explained by the mode, i.e. by the predictor variables that have been included. This suggests a high-performing explanatory model. 
 
 Let Before welcoming this conclusion, we validate the linearity and normality assumptions of our model by checking our residuals as follows: 
-
 
 ```{r}
 # Residual plots 
 
-res = resid(model_sig) # residuals 
-stdres = rstandard(model_sig) # standardized residuals 
+res = resid(new_model) # residuals 
+stdres = rstandard(new_model) # standardized residuals 
 
 # QQ Plot of Residuals - for normality
 qqnorm(stdres, main = "QQ Plot of Standardized Residuals", xlab = "Normal Scores", ylab = "Standardized Residual")
@@ -417,16 +450,15 @@ The plot of residuals against fitted values shows that for the most part, the re
 As a remedial measure, we consider performing a transformation on Sale Price. We use the `boxcox()` function to determine the transformation under which the maximum likelihood [of ?] is attained. 
 
 ```{r}
-boxcox(model_sig)
+boxcox(new_model)
 ```
 
-We see that lambda = 1 is captured in the 95% CI of lambdas, which means we are not bound to perform a transformation. However, since the likelihood function appears to take its maximum at lambda = ~ 0.5, we apply a square root transformation to Sale Price, refit the model, and revalidate our model assumptions with residual plots as above.  
+We see that lambda = 1 is not captured in the 95% CI of lambdas, indicated by the three vertical dashed lines. This means a transformation is necessary. We choose lambda = ~ 0.5 since this is an interpretable transformation value. Below, we apply a square root transformation to Sale Price, refit the model, and revalidate our model assumptions with residual plots as above.  
 
 ```{r}
 # Log Transformation
-log_model_formula <- as.formula(paste("sqrt(SalePrice) ~ ", paste(sig_var_bic, collapse = "+")))
+log_model_formula <- as.formula(paste("sqrt(SalePrice) ~ ", paste(new_sig_var_bic, collapse = "+")))
 log_model <- lm(formula = log_model_formula, data = workingDF)
-log_model_rsq <- summary(log_model)$r.squared # r-squared value 
 
 res_log = resid(log_model) # residuals 
 stdres_log = rstandard(log_model) # standardized residuals 
@@ -444,7 +476,7 @@ qqline(stdres_log)
 
 ```
 
-Our new model produces an R-squared value of `r log_model_rsq`. Our residuals vs. fitted values plot shows a better pattern of homoscedasticity, which suggests that our linear regression model adequately captures the trend in the log-transformed data. The normal probability plot of the standardized residuals also shows better adherence to a linear pattern, which suggests that our assumption of normality is better. Indeed, the formal Shapiro-Wilks test produces a p-value of ..., which means we ...
+Our new model produces an R-squared value of 0.9411, indicating that 94.11% of the variance in Sale Price is captured by the model. Our residuals vs. fitted values plot shows a better pattern of homoscedasticity, which suggests that our linear regression model adequately captures the trend in the log-transformed data. The normal probability plot of the standardized residuals also shows better adherence to a linear pattern, which suggests that our assumption of normality is better. 
 
 Accepting our new model, we provide its summary as follows:
 
