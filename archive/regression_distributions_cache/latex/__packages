@@ -1,0 +1,15 @@
+base
+tidyverse
+ggplot2
+tibble
+tidyr
+readr
+purrr
+dplyr
+Matrix
+foreach
+glmnet
+magrittr
+gridExtra
+olsrr
+bindrcpp
