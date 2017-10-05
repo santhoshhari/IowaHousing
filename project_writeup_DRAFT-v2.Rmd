@@ -348,7 +348,6 @@ load("/Users/santhoshhari/Documents/Coursework/LinearRegression/IowaHousing/AIC_
 # Find coefficients significant at the alpha = 0.01 level
 bool_aic <- summary(model_aic)$coeff[-1,4] < 0.01
 sig_var_aic <- names(bool_aic)[bool_aic == TRUE]
-length(sig_var_aic)
 ```
 
 Per the BIC criterion, the following are the predictor variables signficant at the alpha = 0.05 level.
@@ -392,14 +391,9 @@ We see that there are several entries > threshold = 30, and hence we conclude th
 
 ```{r}
 coll_out = colldiag(model_sig, scale = TRUE, center = FALSE, add.intercept = TRUE)
-unlist(coll_out[1], use.names = F) >30
-colnames(coll_out$pi)[unlist(coll_out[1], use.names = F) >30]
-dim(as.matrix(coll_out$pi[unlist(coll_out[1], use.names = F) >30, ]))
-# 11 variabels with pi > 30
-
-pi = coll_out$pi[unlist(coll_out[1], use.names = F) >30, ]
-pi[pi < 0.75] <- NA
-pi
+# unlist(coll_out[1], use.names = F) >30
+# colnames(coll_out$pi)[unlist(coll_out[1], use.names = F) >30]
+# dim(as.matrix(coll_out$pi[unlist(coll_out[1], use.names = F) >30, ]))
 ```
 
 Based on results, we drop the Garage Condition variables since they are collinear with the Garage Quality variables.
