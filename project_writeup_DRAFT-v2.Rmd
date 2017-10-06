@@ -7,7 +7,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, cache = TRUE, tidy.opts=list(width.cutoff=65),tidy=TRUE)
+knitr::opts_chunk$set(echo = TRUE, eval = F, cache = TRUE, tidy.opts=list(width.cutoff=65),tidy=TRUE)
 
 # Clear working environment
 rm(list=ls())
@@ -35,16 +35,12 @@ options(scipen=999)
 
 ```{r}
 #rawDF <- read.csv("/Users/booranium/usf/601_regression/project/housing.txt", stringsAsFactors = T)
-rawDF <- read.csv("/Users/santhoshhari/Documents/Coursework/LinearRegression/IowaHousing/Data/housing.txt", stringsAsFactors = T)
-#rawDF <- read.csv('housing.txt', stringsAsFactors = T)
+#rawDF <- read.csv("/Users/santhoshhari/Documents/Coursework/LinearRegression/IowaHousing/Data/housing.txt", stringsAsFactors = T)
+rawDF <- read.csv('housing.txt', stringsAsFactors = T)
 
 ```
 
-The Iowa housing dataset contains `r dim(rawDF)[1]` rows and `r dim(rawDF)[2]` variables, a glimpse of which is as follows: 
-
-```{r}
-str(rawDF)
-```
+The Iowa housing dataset contains `r dim(rawDF)[1]` rows and `r dim(rawDF)[2]` variables.
 
 At first glance, we see that most of the variables are categorical - both numeric and character types - and only a handful are continuous. The response variable for our analysis is `SalePrice`, and the remaining 79 variables (excluding the record `ID` column) are considered potential predictor variables. Checking the data dictionary, we found the following distribution for the predictor variables:
 
@@ -128,7 +124,6 @@ row.names(NA_count) <- NULL
 knitr::kable(NA_count, caption = "\\label{tab:NACount1} Variable NA Count and Percentage(after replacing NAs with 0s, where appropriate)",
 format.args = list(big.mark = ','))
 
-colnames(housingDF)
 ```
 
 Table \ref{tab:NACount1} shows the list of remaining variables where `NA` indicates missing data. We impute `NA`s in these variables with
@@ -170,87 +165,10 @@ To begin with, we check the distribution of sale prices using a histogram and bo
 summary(housingDF$SalePrice)
 ```
 
-Intuition suggests the neighborhood is a key determining factor in a house's sale price, hence below, we plot the distribution of sale price by neighborhood. 
+Intuition suggests the neighborhood is a key determining factor in a house's sale price
+We also plot the distribution of houses against a number of features related to the physical geography of the property which suggests that most of the houses are located in `Medium/Low Density` residential areas. We can also observe that most of the houses have paved road access, do not have alleys and have all public utilities(E,G,W,& S). We can notice that most of the properties are regular or slightly irregular in share, built on level surfaces with gentle slope. 
 
-```{r, fig.cap="\\label{fig:box1} SalePrice distribution per neighborhood"}
-housingDF %>% 
-  dplyr::select(Neighborhood, SalePrice) %>% 
-  ggplot(aes(factor(Neighborhood), SalePrice)) + 
-  geom_boxplot() + 
-  theme(axis.text.x = element_text(angle = 90, hjust =1)) + 
-  xlab('Neighborhoods')
-```
-
-From Figure \ref{fig:box1}, we can observe that Brookside and Meadow Vista have the lowest median house price while Northridge and Northridge Height have the heighest median house price as well as several outliers.
-
-We then distribution of houses by a number of key features we hypothesize to be important in determining housing price: the property's zoning class (`MSZoning`), type of road access to the property (`Street`), type of alley access to the property (`Alley`), and type of utilies available (`Utilities`)
-
-```{r}
-plotHist <- function(data_in, i) {
-  data <- data.frame(x=data_in[[i]])
-  p <- ggplot(data=data, aes(x=factor(x))) +
-       stat_count() +
-       xlab(colnames(data_in)[i]) +
-       theme_light() + 
-       theme(axis.text.x = element_text(angle = 90, hjust =1))
-  return (p)
-}
-
-doPlots <- function(data_in, fun, ii, ncol=3) {
-  pp <- list()
-  for (i in ii) {
-    p <- fun(data_in=data_in, i=i)
-    pp <- c(pp, list(p))
-  }
-  do.call("grid.arrange", c(pp, ncol=ncol))
-}
-
-plotDen <- function(data_in, i){
-  data <- data.frame(x=data_in[[i]], SalePrice = data_in$SalePrice)
-  p <- ggplot(data= data) + 
-       geom_line(aes(x = x), stat = 'density', size = 1,alpha = 1.0) +
-       xlab(paste0((colnames(data_in)[i]), '\n', 'Skewness: ',
-                   round(skewness(data_in[[i]], na.rm = TRUE), 2))) +
-       theme_light() 
-  return(p)
-}
-
-plotCorr <- function(data_in, i){
-  data <- data.frame(x = data_in[[i]], SalePrice = data_in$SalePrice)
-  p <- ggplot(data, aes(x = x, y = SalePrice)) + 
-       geom_point(na.rm = TRUE) + 
-       geom_smooth(method = lm ) + 
-       xlab(paste0(colnames(data_in)[i], '\n', 'R-Squared: ',
-                round(cor(data_in[[i]], data$SalePrice, use = 'complete.obs'), 2))) +
-       theme_light()
-  return(suppressWarnings(p))
-}
-```
-
-```{r, fig.height=3.5, fig.cap="\\label{fig:hist1}Locality, access, utility features distribution"}
-doPlots(housingDF, fun = plotHist, ii = c(3,6,7,10), ncol = 2)
-```
-
-We also plot the distribution of houses against a number of features related to the physical geography of the property:
-
-```{r, fig.height=3.5, fig.cap="\\label{fig:hist2}Lot/Land feature distribution"}
-doPlots(housingDF, fun = plotHist, ii = c(8,9,11,12), ncol = 2)
-```
-
-Figure \ref{fig:hist1} suggests that most of the houses are located in `Medium/Low Density` residential areas. We can also observe that most of the houses have paved road access, do not have alleys and have all public utilities(E,G,W,& S). From Figure \ref:{fig:hist2}, we can notice that most of the properties are regular or slightly irregular in share, built on level surfaces with gentle slope. 
-
-```{r, fig.height=3.5, fig.cap="\\label{fig:hist3} Neighborhood level slope distribution"}
-housingDF %>% 
-  dplyr::select(LandSlope, Neighborhood) %>% 
-  arrange(Neighborhood) %>% 
-  group_by(Neighborhood, LandSlope) %>% 
-  summarize(Count = n()) %>% 
-  ggplot(aes(Neighborhood, Count)) + 
-  geom_bar(aes(fill = LandSlope), position = 'dodge', stat = 'identity')+
-  theme(axis.text.x = element_text(angle = 90, hjust =1))
-```
-
-From Figure \ref:{fig:hist3}, we can see that houses with severe slope are located only in Clear Creek and Timberland while more than 10 neighborhoods have properties with moderate slope.
+We can also see that houses with severe slope are located only in Clear Creek and Timberland while more than 10 neighborhoods have properties with moderate slope.
 
 ```{r, fig.height=8, fig.cap="\\label{fig:hist3} Scatter plot of variables showing high positive  linear relationship with SalePrice"}
 num_var <- names(housingDF)[which(sapply(housingDF, is.numeric))]
@@ -258,9 +176,9 @@ housing_numeric <- housingDF[num_var]
 correlations <- cor(housing_numeric[,-1])
 highcorr <- c(names(correlations[,'SalePrice'])[which(correlations[,'SalePrice'] > 0.5)], names(correlations[,'SalePrice'])[which(correlations[,'SalePrice'] < -0.2)])
 data_corr <- housingDF[highcorr]
-img <- doPlots(data_corr, fun = plotCorr, ii = 1:10)
-png(filename="faithful.png")
-plot(img)
+#img <- doPlots(data_corr, fun = plotCorr, ii = 1:10)
+#png(filename="faithful.png")
+#plot(img)
 ```
 
 ## Task 1. Building the Explanatory Model
@@ -299,11 +217,6 @@ student_resid <- as.data.frame(rstudent(ols_model))
 student_resid <- setDT(student_resid, keep.rownames = TRUE)[]
 colnames(student_resid) <- c('ix', 'resid')
 
-# Plot
-plot(student_resid$ix, student_resid$resid, col = ifelse(workingDF$Id %in% influential_points, "red", "black"), pch = ifelse(workingDF$Id %in% influential_points, 19, 1), main = "Plot of Studentized Residuals", xlab = 'Observation' )
-abline(h = t, col = 'red')
-abline(h = 0, col = 'red')
-abline(h = -t, col = 'red')
 text(student_resid$ix, student_resid$resid, labels = student_resid$ix)
 ```
 Our plot of studentized resdiuals indicates that observations all 5 points are leverage points.
@@ -313,12 +226,6 @@ Our plot of studentized resdiuals indicates that observations all 5 points are l
 standard_resid <- as.data.frame(rstandard(ols_model))
 standard_resid <- setDT(standard_resid, keep.rownames = TRUE)[]
 colnames(standard_resid) <- c('ix', 'resid')
-
-# Plot
-plot(standard_resid$ix, standard_resid$resid, col = ifelse(workingDF$Id  %in% influential_points, "red", "black"), pch = ifelse(workingDF$Id  %in% influential_points, 19, 1), main = "Plot of Standardized Residuals", xlab = 'Observation' )
-abline(h = t, col = 'red')
-abline(h = -t, col = 'red')
-text(standard_resid$ix, standard_resid$resid, labels = standard_resid$ix)
 ```
 
 Our plots of studentized and standardized resdiuals indicate that all 5 observations are both points of leverage and outliers. We remove them from our dataset and recreate the saturated OLS model below:
@@ -406,14 +313,7 @@ new_model_scaled <- lm(formula = new_model_formula, data = as.data.frame(scale(w
 vif(new_model_scaled)[(sqrt(vif(new_model_scaled)) > 10) == TRUE]
 ```
 
-Using our rule of thumb, we conclude that there is no more multicollinearity in our model since there are no VIF values > 10. We print the summary of our model below:
-
-```{r}
-summary(new_model)
-```
-
-
-At first glance, the multiple R-squared value of 0.9551 indicates that 95.51% of the variability in SalePrice around its mean is explained by the mode, i.e. by the predictor variables that have been included. This suggests a high-performing explanatory model. 
+Using our rule of thumb, we conclude that there is no more multicollinearity in our model since there are no VIF values > 10. At first glance, the multiple R-squared value of 0.9551 indicates that 95.51% of the variability in SalePrice around its mean is explained by the mode, i.e. by the predictor variables that have been included. This suggests a high-performing explanatory model. 
 
 Before welcoming this conclusion, we validate the linearity and normality assumptions of our model by checking our residuals as follows: 
 
