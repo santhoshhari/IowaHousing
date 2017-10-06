@@ -258,7 +258,9 @@ housing_numeric <- housingDF[num_var]
 correlations <- cor(housing_numeric[,-1])
 highcorr <- c(names(correlations[,'SalePrice'])[which(correlations[,'SalePrice'] > 0.5)], names(correlations[,'SalePrice'])[which(correlations[,'SalePrice'] < -0.2)])
 data_corr <- housingDF[highcorr]
-doPlots(data_corr, fun = plotCorr, ii = 1:10)
+img <- doPlots(data_corr, fun = plotCorr, ii = 1:10)
+png(filename="faithful.png")
+plot(img)
 ```
 
 ## Task 1. Building the Explanatory Model
@@ -283,9 +285,11 @@ ols_dffits_plot(ols_model)
 n = nrow(workingDF)
 p = ncol(workingDF - 1) # remove response var 
 t = 2*sqrt(p/n)
+df <- dffits(ols_model)
+influential_points <- which(abs(df)>t)
 ```
 
-Note that according to the criterion of threshold t = 2*sqrt(n/p) = 0.85, the DFFITS plot shows a large number of influential observations. We look specifically at 6 points greater than threshold = abs(5): 198, 524, 692, 826 and 1183. Below we plot the standardized and studentized residuals to check these observations for being outliers and/or points of leverage respectively. 
+Note that according to the criterion of threshold t = 2*sqrt(n/p) = `r round(t,2)`, the DFFITS plot shows a large number of influential observations. Below we plot the standardized and studentized residuals to check these observations for being outliers and/or points of leverage respectively. 
 
 ```{r}
 # Creating from scratch because OLSRR ols_srsd_plot() function is not working.
@@ -296,7 +300,7 @@ student_resid <- setDT(student_resid, keep.rownames = TRUE)[]
 colnames(student_resid) <- c('ix', 'resid')
 
 # Plot
-plot(student_resid$ix, student_resid$resid, col = ifelse(workingDF$Id == 198 | workingDF$Id == 524 | workingDF$Id == 692 | workingDF$Id == 826 | workingDF$Id == 1183, "red", "black"), pch = ifelse(workingDF$Id == 198 | workingDF$Id == 524 | workingDF$Id == 692 | workingDF$Id == 826 | workingDF$Id == 1183, 19, 1), main = "Plot of Studentized Residuals", xlab = 'Observation' )
+plot(student_resid$ix, student_resid$resid, col = ifelse(workingDF$Id %in% influential_points, "red", "black"), pch = ifelse(workingDF$Id %in% influential_points, 19, 1), main = "Plot of Studentized Residuals", xlab = 'Observation' )
 abline(h = t, col = 'red')
 abline(h = 0, col = 'red')
 abline(h = -t, col = 'red')
@@ -311,9 +315,8 @@ standard_resid <- setDT(standard_resid, keep.rownames = TRUE)[]
 colnames(standard_resid) <- c('ix', 'resid')
 
 # Plot
-plot(standard_resid$ix, standard_resid$resid, col = ifelse(workingDF$Id == 198 | workingDF$Id == 524 | workingDF$Id == 692 | workingDF$Id == 826 | workingDF$Id == 1183, "red", "black"), pch = ifelse(workingDF$Id == 198 | workingDF$Id == 524 | workingDF$Id == 692 | workingDF$Id == 826 | workingDF$Id == 1183, 19, 1), main = "Plot of Standardized Residuals", xlab = 'Observation' )
+plot(standard_resid$ix, standard_resid$resid, col = ifelse(workingDF$Id  %in% influential_points, "red", "black"), pch = ifelse(workingDF$Id  %in% influential_points, 19, 1), main = "Plot of Standardized Residuals", xlab = 'Observation' )
 abline(h = t, col = 'red')
-abline(h = 0, col = 'red')
 abline(h = -t, col = 'red')
 text(standard_resid$ix, standard_resid$resid, labels = standard_resid$ix)
 ```
@@ -322,7 +325,7 @@ Our plots of studentized and standardized resdiuals indicate that all 5 observat
 
 ```{r}
 # remove influential points 
-workingDF <- filter(workingDF, !Id %in% c(198, 524, 692, 826, 1183)) 
+workingDF <- filter(workingDF, !Id %in% influential_points) 
 #nrow(workingDF) #1455
 
 # recreate model
@@ -333,24 +336,12 @@ For the purposes of variable selection, we refer to the saturated OLS model crea
 
 ```{r, eval = FALSE}
 # Code chunk not run; load saved model for expediency 
-model_aic <- step(ols_model, direction = 'backward', trace = F) 
+#model_aic <- step(ols_model, direction = 'backward', trace = F) 
 model_bic <- step(ols_model, k = log(nrow(workingDF)), direction = 'backward', trace = F) 
 
 ## save the models 
-save(model_aic, file = "/Users/santhoshhari/Documents/Coursework/LinearRegression/IowaHousing/AIC_model.rda")
+#save(model_aic, file = "/Users/santhoshhari/Documents/Coursework/LinearRegression/IowaHousing/AIC_model.rda")
 save(model_bic, file = "/Users/santhoshhari/Documents/Coursework/LinearRegression/IowaHousing/BIC_model.rda")
-```
-
-Per the AIC criterion, the following are the predictor variables signficant at the alpha = 0.05 level.
-
-```{r}
-#load("/Users/booranium/usf/601_regression/project/IowaHousing/AIC_model.rda") # model loaded as 'model_aic' 
-#load("/Users/santhoshhari/Documents/Coursework/LinearRegression/IowaHousing/AIC_model.rda") # model loaded as 'model_aic' 
-load('AIC_model.rda')
-
-# Find coefficients significant at the alpha = 0.01 level
-bool_aic <- summary(model_aic)$coeff[-1,4] < 0.01
-sig_var_aic <- names(bool_aic)[bool_aic == TRUE]
 ```
 
 Per the BIC criterion, the following are the predictor variables signficant at the alpha = 0.05 level.
@@ -362,11 +353,6 @@ load('BIC_model.rda')
 # find coefficients significant at the alpha = 0.01 level
 bool_bic <- summary(model_bic)$coeff[-1,4] < 0.01
 sig_var_bic <- names(bool_bic)[bool_bic == TRUE]
-```
-
-Note that both criterions select the same set of variables.
-```{r}
-setdiff(sig_var_aic, sig_var_bic)
 ```
 
 We can now perform OLS regression with our subset of `r length(sig_var_bic)` significant variables. The model summary is as follows:
@@ -427,9 +413,9 @@ summary(new_model)
 ```
 
 
-At first glance, the multiple R-squared value of 0.9293 indicates that 92.93% of the variability in SalePrice around its mean is explained by the mode, i.e. by the predictor variables that have been included. This suggests a high-performing explanatory model. 
+At first glance, the multiple R-squared value of 0.9551 indicates that 95.51% of the variability in SalePrice around its mean is explained by the mode, i.e. by the predictor variables that have been included. This suggests a high-performing explanatory model. 
 
-Let Before welcoming this conclusion, we validate the linearity and normality assumptions of our model by checking our residuals as follows: 
+Before welcoming this conclusion, we validate the linearity and normality assumptions of our model by checking our residuals as follows: 
 
 ```{r}
 # Residual plots 
@@ -441,20 +427,20 @@ stdres = rstandard(new_model) # standardized residuals
 qqnorm(stdres, main = "QQ Plot of Standardized Residuals", xlab = "Normal Scores", ylab = "Standardized Residual")
 qqline(stdres)
 
-# Shapiro-Wilks test for normality 
-shapiro.test(res)
+# Test for normality 
+ks.test(scale(res),rnorm(length(workingDF)))
 
 # Plot of residuals vs. fitted values - for linearity 
 plot(workingDF$SalePrice, res, main = "Plot of Residuals vs. Sale Price", xlab = "Sale Price", ylab = "Residual")
-#abline(h=c(0,0), col = 'red')
-#abline(v=350000, col = 'blue')
+abline(h=c(0,0), col = 'red')
+abline(v=350000, col = 'blue')
 
 
 ```
 
-The plot of residuals against fitted values shows that for the most part, the residuals are evenly distributed across the y = 0 line. However, we see that as Sale Price increases, the residuals start to deviate homoscedasticity. More specifically, we see this deviation happen at approximately Sale Price = $350K, which our earlier summary showed to be between the variable's 3rd quartile and maximum. This suggets that for the last quartile of high-priced houses, the fitted regression model is not as adequate as it is for the reset of the population. The normal probability (QQ) plot corroborates this finding: it shows deviance from linearity at both tail ends of the residual rang, which suggests a heavy tailed distribution. This occurs at both ends of the distribution, i.e. both extremely low-priced houses and extremely high-priced houses are pulling the distribution away from normality. Indeed, the formal Shapiro-Wilks test for normality produces a p-value of ~0, which leads us to reject the null hypothesis, at the alpha = 0.05 level, that the residuals are normally distributed. 
+The plot of residuals against fitted values shows that for the most part, the residuals are evenly distributed across the y = 0 line. However, we see that as Sale Price increases, the residuals start to deviate homoscedasticity. More specifically, we see this deviation happen at approximately Sale Price = $350K, which our earlier summary showed to be between the variable's 3rd quartile and maximum. This suggets that for the last quartile of high-priced houses, the fitted regression model is not as adequate as it is for the reset of the population. The normal probability (QQ) plot corroborates this finding: it shows deviance from linearity at both tail ends of the residual rang, which suggests a heavy tailed distribution. This occurs at both ends of the distribution, i.e. both extremely low-priced houses and extremely high-priced houses are pulling the distribution away from normality. 
 
-As a remedial measure, we consider performing a transformation on Sale Price. We use the `boxcox()` function to determine the transformation under which the maximum likelihood [of ?] is attained. 
+As a remedial measure, we consider performing a transformation on Sale Price. We use the `boxcox()` function to determine the transformation under which the maximum likelihood is attained. 
 
 ```{r}
 boxcox(new_model)
@@ -463,32 +449,32 @@ boxcox(new_model)
 We see that lambda = 1 is not captured in the 95% CI of lambdas, indicated by the three vertical dashed lines. This means a transformation is necessary. We choose lambda = ~ 0.5 since this is an interpretable transformation value. Below, we apply a square root transformation to Sale Price, refit the model, and revalidate our model assumptions with residual plots as above.  
 
 ```{r}
-# Log Transformation
-log_model_formula <- as.formula(paste("sqrt(SalePrice) ~ ", paste(new_sig_var_bic, collapse = "+")))
-log_model <- lm(formula = log_model_formula, data = workingDF)
+# sqrt Transformation
+sqrt_model_formula <- as.formula(paste("sqrt(SalePrice) ~ ", paste(new_sig_var_bic, collapse = "+")))
+sqrt_model <- lm(formula = sqrt_model_formula, data = workingDF)
 
-res_log = resid(log_model) # residuals 
-stdres_log = rstandard(log_model) # standardized residuals 
+res_sqrt = resid(sqrt_model) # residuals 
+stdres_sqrt = rstandard(sqrt_model) # standardized residuals 
 
-shapiro.test(res_log)
+ks.test(scale(res_sqrt),rnorm(length(workingDF)))
 
 # Plot of Residuals from Log Model vs. Fitted Values 
-plot(log(workingDF$SalePrice), res_log, main = "Plot of Log Model Residuals vs. Log of Sale Price", xlab = "Log of Sale Price", ylab = "Residual")
+plot(sqrt(workingDF$SalePrice), res_sqrt, main = "Plot of Square Root Model Residuals vs. Squaer Root of Sale Price", xlab = "Square Root of Sale Price", ylab = "Residual")
 abline(h=c(0,0), col = 'red')
 abline(v=350000, col = 'blue')
 
 # Normal Probability Plot of Residuals from Log Model
-qqnorm(stdres_log, main = "QQ Plot of Standardized Log Model Residuals", xlab = "Normal Scores", ylab = "Standardized Residual")
-qqline(stdres_log)
+qqnorm(stdres_sqrt, main = "QQ Plot of Standardized Square Root Model Residuals", xlab = "Normal Scores", ylab = "Standardized Residual")
+qqline(stdres_sqrt)
 
 ```
 
-Our new model produces an R-squared value of 0.9411, indicating that 94.11% of the variance in Sale Price is captured by the model. Our residuals vs. fitted values plot shows a better pattern of homoscedasticity, which suggests that our linear regression model adequately captures the trend in the log-transformed data. The normal probability plot of the standardized residuals also shows better adherence to a linear pattern, which suggests that our assumption of normality is better. 
+Our new model produces an R-squared value of 0.9573, indicating that 95.73% of the variance in Sale Price is captured by the model. Our residuals vs. fitted values plot shows a better pattern of homoscedasticity, which suggests that our linear regression model adequately captures the trend in the log-transformed data. The normal probability plot of the standardized residuals also shows better adherence to a linear pattern, which suggests that our assumption of normality is better. 
 
 Accepting our new model, we provide its summary as follows:
 
 ```{r}
-summary(log_model)
+summary(sqrt_model)
 ```
 
 We conclude that the variables included above are most relevant in determining a house's sale price. In particular, those variables that are significant at the 0.01 level, i.e., are most significant. 
@@ -508,13 +494,11 @@ new_sig_var_bic[which(new_sig_var_bic=="`Exterior2ndWd Sdng`")] <- "Exterior2ndW
 sig_var_morty <- x_morty[,new_sig_var_bic]
 ```
 
-The estimated sale price of Morty's property is \$ $`r round(predict(log_model,sig_var_morty)^2,0)`$. To make a recommendation to Morty regarding the selling price of his house, we leverage the model built above to make a prediction of Sale Price based on select attributes as determined above.
-
-We see that the 95% CI for the predicted Sale Price of Morty's house, based on selected attributes, is ... As such, we recommend that Morty sell his house at a maximum of ..., which is more/less than the other firm's recommendation of $143K.
+To make a recommendation to Morty regarding the selling price of his house, we leverage the model built above. We see that the 95% CI for the predicted Sale Price of Morty's house, based on selected attributes, is \$`r round(predict(sqrt_model,sig_var_morty)^2,0)`,  As such, we recommend that Morty sell his house at a maximum of ..., which is more/less than the other firm's recommendation of $143K.
 
 ```{r}
-coef <- data.frame(coef.name = names(coef(log_model)), 
-           coef.value = matrix(coef(log_model)))
+coef <- data.frame(coef.name = names(coef(sqrt_model)), 
+           coef.value = matrix(coef(sqrt_model)))
 
 # exclude the (Intercept) term
 coef <- coef[-1,]
@@ -544,6 +528,15 @@ Train and test sets:
 75% of the data forms the train set
 25% of the data forms the test set
 
+```{r}
+x <- workingDF[,-1]
+x$SalePrice <- log(workingDF[,ncol(workingDF)])
+#y_log = log(y)
+#train/test
+set.seed(121)
+train <- sample(1:nrow(x), 3 * nrow(x)/4)
+test <- (-train)
+```
 
 
 Ridge:
