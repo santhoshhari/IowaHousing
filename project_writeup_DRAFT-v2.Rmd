@@ -35,8 +35,8 @@ options(scipen=999)
 
 ```{r}
 #rawDF <- read.csv("/Users/booranium/usf/601_regression/project/housing.txt", stringsAsFactors = T)
-#rawDF <- read.csv("/Users/santhoshhari/Documents/Coursework/LinearRegression/IowaHousing/Data/housing.txt", stringsAsFactors = T)
-rawDF <- read.csv('housing.txt', stringsAsFactors = T)
+rawDF <- read.csv("/Users/santhoshhari/Documents/Coursework/LinearRegression/IowaHousing/Data/housing.txt", stringsAsFactors = T)
+#rawDF <- read.csv('housing.txt', stringsAsFactors = T)
 
 ```
 
@@ -337,8 +337,8 @@ model_aic <- step(ols_model, direction = 'backward', trace = F)
 model_bic <- step(ols_model, k = log(nrow(workingDF)), direction = 'backward', trace = F) 
 
 ## save the models 
-save(model_aic, file = "/Users/booranium/usf/601_regression/project/IowaHousing/AIC_model.rda")
-save(model_bic, file = "/Users/booranium/usf/601_regression/project/IowaHousing/BIC_model.rda")
+save(model_aic, file = "/Users/santhoshhari/Documents/Coursework/LinearRegression/IowaHousing/AIC_model.rda")
+save(model_bic, file = "/Users/santhoshhari/Documents/Coursework/LinearRegression/IowaHousing/BIC_model.rda")
 ```
 
 Per the AIC criterion, the following are the predictor variables signficant at the alpha = 0.05 level.
@@ -497,24 +497,36 @@ We conclude that the variables included above are most relevant in determining a
 
 ```{r}
 #morty <- read.csv("/Users/booranium/usf/601_regression/project/Morty.txt", stringsAsFactors = T)
-#morty <- read.csv("/Users/santhoshhari/Documents/Coursework/LinearRegression/IowaHousing/Data/Morty.txt", stringsAsFactors = T)
-morty = read.csv('Morty.txt', stringsAsFactors = T)
-sig_var_morty <- names(morty)[bool_bic == TRUE]
-sig_var_morty
+morty <- read.csv("/Users/santhoshhari/Documents/Coursework/LinearRegression/IowaHousing/Data/Morty.txt", stringsAsFactors = T)
+morty <- morty[,-1]
+new_data <- rbind(housingDF, morty)
+new_data <- model.matrix(SalePrice ~ ., data = new_data)[,-1]
+x_morty <- as.data.frame(tail(new_data,1))
+new_sig_var_bic[which(new_sig_var_bic=="`RoofMatlTar&Grv`")] <- "RoofMatlTar&Grv"
+new_sig_var_bic[which(new_sig_var_bic=="`Exterior1stWd Sdng`")] <- "Exterior1stWd Sdng"
+new_sig_var_bic[which(new_sig_var_bic=="`Exterior2ndWd Sdng`")] <- "Exterior2ndWd Sdng"
+sig_var_morty <- x_morty[,new_sig_var_bic]
 ```
 
-To make a recommendation to Morty regarding the selling price of his house, we leverage the model built above to make a prediction of Sale Price based on select attributes as determined above.
+The estimated sale price of Morty's property is \$ $`r round(predict(log_model,sig_var_morty)^2,0)`$. To make a recommendation to Morty regarding the selling price of his house, we leverage the model built above to make a prediction of Sale Price based on select attributes as determined above.
 
-```{r, eval = FALSE}
+We see that the 95% CI for the predicted Sale Price of Morty's house, based on selected attributes, is ... As such, we recommend that Morty sell his house at a maximum of ..., which is more/less than the other firm's recommendation of $143K.
 
-##Cofde for morty
+```{r}
+coef <- data.frame(coef.name = names(coef(log_model)), 
+           coef.value = matrix(coef(log_model)))
 
-
+# exclude the (Intercept) term
+coef <- coef[-1,]
+coef <- arrange(coef,-coef.value)
+imp_coef <- head(coef,20)
+ggplot(imp_coef) +
+    geom_bar(aes(x=reorder(coef.name,coef.value),y=coef.value), stat="identity") +
+    coord_flip() +
+    ggtitle("Coefficents in the Model") +
+    theme(axis.title=element_blank())
 ```
 
-We see that the 95% CI for the predicted Sale Price of Morty's house, based on selected attributes, is ... As such, we recommend that Morty sell his house at a maximum of ..., which is more/less than the other firm's recommendation of $143K. 
-
-In addition, we see that 
 
 # Part II: Predictive Modelling
 
