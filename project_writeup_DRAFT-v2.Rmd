@@ -573,6 +573,7 @@ sqrt(mean((exp(predictions_log) - exp(y_test))^2))
 Ridge:
 ```{r}
 set.seed(121)
+
 x <- workingDF[,2:ncol(workingDF)-1]
 y <- workingDF$SalePrice
 
@@ -584,31 +585,42 @@ ridge<-cv.glmnet(as.matrix(x[train, ]), y.train, alpha=0)
 plot(ridge)
 best.lambda <- ridge$lambda.min
 best.lambda
+abline(v = log(best.lambda), col = 'blue', lwd = 2)
+
+ridge.model.train <- glmnet(as.matrix(x[train, ]), y.train, alpha = 0, lambda = best.lambda)
 
 
-ridge.pred <- predict(ridge, s = best.lambda, newx = as.matrix(x[test,]))
+ridge.pred <- predict(ridge.model.train, s = best.lambda, newx = as.matrix(x[test,]))
 mspe.ridge <- mean((ridge.pred - y.test)^2)
-sqrt(mspe.ridge)
-#coef(ridge)
 
-
-
+coef_ridge <- coef(ridge.model.train)
+length(coef_ridge[coef_ridge != 0])
 
 ```
 
 Lasso:
 ```{r}
 
+set.seed(121)
+
+x <- workingDF[,2:ncol(workingDF)-1]
+y <- workingDF$SalePrice
+
 lasso <-cv.glmnet(as.matrix(x[train, ]), y.train, alpha=1)
 plot(lasso)
 best.lambda <- lasso$lambda.min
 best.lambda
+abline(v = log(best.lambda), col = 'blue', lwd = 2)
 
-lasso.pred <- predict(lasso, s = best.lambda, newx = as.matrix(x[test,]))
+lasso.model.train <- glmnet(as.matrix(x[train, ]), y.train, alpha = 1, lambda = best.lambda)
+
+
+lasso.pred <- predict(lasso.model.train, s = best.lambda, newx = as.matrix(x[test,]))
 mspe.lasso <- mean((lasso.pred - y.test)^2)
-sqrt(mspe.lasso)
+
 #coef(lasso)
-length(coef(lasso)[coef(lasso)!= 0])
+coef_lasso <- coef(lasso.model.train)
+length(coef_lasso[coef_lasso!= 0])
 
 
 
@@ -617,7 +629,11 @@ length(coef(lasso)[coef(lasso)!= 0])
 Elastic Net:
 
 ```{r}
-#find best alpha - 0.5
+set.seed(121)
+
+x <- workingDF[,2:ncol(workingDF)-1]
+y <- workingDF$SalePrice
+#find best alpha
 alphalist<-seq(0,1,by=0.1)
 elasticnet<-lapply(alphalist, function(a){cv.glmnet(as.matrix(x[train, ]), y.train, alpha=a)})
 mse <- list()
@@ -626,18 +642,26 @@ for (i in 1:11) {
   print(min(elasticnet[[i]]$cvm)) 
   print(i)}
 which.min(unlist(mse))
-alpha_min = alphalist[2]
+alpha_min = alphalist[which.min(unlist(mse))]
+
+#find best lambda for best alpha
 cv.out <- cv.glmnet(as.matrix(x[train, ]), y.train, alpha = alpha_min)
 
 plot(cv.out)
 best.lambda <- cv.out$lambda.min
 best.lambda
+abline(v = log(best.lambda), col = 'blue', lwd = 2)
 
-EN.pred <- predict(cv.out, s = best.lambda, newx = as.matrix(x[test,]))
+#train EN
+EN.model.train <- glmnet(as.matrix(x[train, ]), y.train, alpha = alpha_min, lambda = best.lambda)
+
+EN.pred <- predict(EN.model.train, newx = as.matrix(x[test,]))
 mspe.EN <- mean((EN.pred - y.test)^2)
-sqrt(mspe.EN)
-coef_elastic <- coef(cv.out)
+coef_elastic <- coef(EN.model.train)
 length(coef_elastic[coef_elastic!= 0])
 ```
-41 variables remain at the end of elastic net, 
+
+```{r}
+MSPE <- data.frame(Ridge = mspe.ridge, Lasso = mspe.lasso, EN = mspe.EN)
+```
 
