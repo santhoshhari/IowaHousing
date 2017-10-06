@@ -531,10 +531,9 @@ ggplot(imp_coef) +
 # Part II: Predictive Modelling
 
 For comparing the prediction accuracy, we use 4 models - 
-1. OLS on log transformed data
-2. Ridge Regression
-3. Lasso Regression
-4. Elastic Net
+1. Ridge Regression
+2. Lasso Regression
+3. Elastic Net
 
 Transformations done on the data before building models - 
 1. Imputing NAs
@@ -546,39 +545,6 @@ Train and test sets:
 25% of the data forms the test set
 
 
-
-Log Model:
-We first normalised y by taking log and then fit the linear model lm.
-
-```{r}
-x <- workingDF[,-1]
-x$SalePrice <- log(workingDF[,ncol(workingDF)])
-#y_log = log(y)
-#train/test
-set.seed(121)
-train <- sample(1:nrow(x), 3 * nrow(x)/4)
-test <- (-train)
-
-new_data <- model.matrix(SalePrice ~ ., data = x)
-colnames(new_data)[which(colnames(new_data)=="`RoofMatlTar&Grv`")] <- "RoofMatlTar&Grv"
-colnames(new_data)[which(colnames(new_data)=="`Exterior1stWd Sdng`")] <- "Exterior1stWd Sdng"
-colnames(new_data)[which(colnames(new_data)=="`Exterior2ndWd Sdng`")] <- "Exterior2ndWd Sdng"
-new_sig_var_bic[which(new_sig_var_bic=="`RoofMatlTar&Grv`")] <- "RoofMatlTar&Grv"
-new_sig_var_bic[which(new_sig_var_bic=="`Exterior1stWd Sdng`")] <- "Exterior1stWd Sdng"
-new_sig_var_bic[which(new_sig_var_bic=="`Exterior2ndWd Sdng`")] <- "Exterior2ndWd Sdng"
-filtered_data <- new_data[,new_sig_var_bic]
-filtered_data <- cbind(filtered_data, x$SalePrice)
-colnames(filtered_data)[length(colnames(filtered_data)) ] = 'SalePrice'
-# Build model
-#log_model <- lm(SalePrice~., data = data.frame(filtered_data[train,]))
-
-# Validation set:
-y_train <- filtered_data[test, 1:ncol(filtered_data)-1]
-y_test <- filtered_data[test, ncol(filtered_data)]
-predictions_log <- predict(log_model, as.data.frame(y_train))
-(mean(((predictions_log)^2 - (y_test))^2))
-
-```
 
 Ridge:
 ```{r}
