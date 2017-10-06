@@ -35,7 +35,9 @@ options(scipen=999)
 
 ```{r}
 #rawDF <- read.csv("/Users/booranium/usf/601_regression/project/housing.txt", stringsAsFactors = T)
-rawDF <- read.csv("/Users/santhoshhari/Documents/Coursework/LinearRegression/IowaHousing/Data/housing.txt", stringsAsFactors = T)
+#rawDF <- read.csv("/Users/santhoshhari/Documents/Coursework/LinearRegression/IowaHousing/Data/housing.txt", stringsAsFactors = T)
+rawDF <- read.csv('housing.txt', stringsAsFactors = T)
+
 ```
 
 The Iowa housing dataset contains `r dim(rawDF)[1]` rows and `r dim(rawDF)[2]` variables, a glimpse of which is as follows: 
@@ -343,7 +345,8 @@ Per the AIC criterion, the following are the predictor variables signficant at t
 
 ```{r}
 #load("/Users/booranium/usf/601_regression/project/IowaHousing/AIC_model.rda") # model loaded as 'model_aic' 
-load("/Users/santhoshhari/Documents/Coursework/LinearRegression/IowaHousing/AIC_model.rda") # model loaded as 'model_aic' 
+#load("/Users/santhoshhari/Documents/Coursework/LinearRegression/IowaHousing/AIC_model.rda") # model loaded as 'model_aic' 
+load('AIC_model.rda')
 
 # Find coefficients significant at the alpha = 0.01 level
 bool_aic <- summary(model_aic)$coeff[-1,4] < 0.01
@@ -354,10 +357,10 @@ Per the BIC criterion, the following are the predictor variables signficant at t
 
 ```{r}
 #load("/Users/booranium/usf/601_regression/project/IowaHousing/BIC_model.rda") # model loaded as 'model_bic'
-load("/Users/santhoshhari/Documents/Coursework/LinearRegression/IowaHousing/BIC_model.rda") # model loaded as 'model_bic' 
-
+#load("/Users/santhoshhari/Documents/Coursework/LinearRegression/IowaHousing/BIC_model.rda") # model loaded as 'model_bic' 
+load('BIC_model.rda')
 # find coefficients significant at the alpha = 0.01 level
-bool_bic <- summary(model_aic)$coeff[-1,4] < 0.01
+bool_bic <- summary(model_bic)$coeff[-1,4] < 0.01
 sig_var_bic <- names(bool_bic)[bool_bic == TRUE]
 ```
 
@@ -467,7 +470,7 @@ log_model <- lm(formula = log_model_formula, data = workingDF)
 res_log = resid(log_model) # residuals 
 stdres_log = rstandard(log_model) # standardized residuals 
 
-shapiro.test(res)
+shapiro.test(res_log)
 
 # Plot of Residuals from Log Model vs. Fitted Values 
 plot(log(workingDF$SalePrice), res_log, main = "Plot of Log Model Residuals vs. Log of Sale Price", xlab = "Log of Sale Price", ylab = "Residual")
@@ -494,7 +497,8 @@ We conclude that the variables included above are most relevant in determining a
 
 ```{r}
 #morty <- read.csv("/Users/booranium/usf/601_regression/project/Morty.txt", stringsAsFactors = T)
-morty <- read.csv("/Users/santhoshhari/Documents/Coursework/LinearRegression/IowaHousing/Data/Morty.txt", stringsAsFactors = T)
+#morty <- read.csv("/Users/santhoshhari/Documents/Coursework/LinearRegression/IowaHousing/Data/Morty.txt", stringsAsFactors = T)
+morty = read.csv('Morty.txt', stringsAsFactors = T)
 sig_var_morty <- names(morty)[bool_bic == TRUE]
 sig_var_morty
 ```
@@ -503,9 +507,8 @@ To make a recommendation to Morty regarding the selling price of his house, we l
 
 ```{r, eval = FALSE}
 
-morty <- c()
-prediction <- predict(log_model, newdata = morty, type = "response", interval = 'confidence', level = 0.95)
-prediction 
+##Cofde for morty
+
 
 ```
 
@@ -514,3 +517,115 @@ We see that the 95% CI for the predicted Sale Price of Morty's house, based on s
 In addition, we see that 
 
 # Part II: Predictive Modelling
+
+For comparing the prediction accuracy, we use 4 models - 
+1. OLS on log transformed data
+2. Ridge Regression
+3. Lasso Regression
+4. Elastic Net
+
+Transformations done on the data before building models - 
+1. Imputing NAs
+2. Creating dummy variables
+3. Removing influential points
+
+Train and test sets:
+75% of the data forms the train set
+25% of the data forms the test set
+
+
+
+Log Model:
+We first normalised y by taking log and then fit the linear model lm.
+
+```{r}
+x <- workingDF[,2:ncol(workingDF)]
+x$SalePrice <- log(workingDF[,ncol(workingDF)])
+#y_log = log(y)
+#train/test
+train <- sample(1:nrow(x), 3 * nrow(x)/4)
+test <- (-train)
+
+# Build model
+log_model <- lm(SalePrice~., data = x[train,])
+
+
+# Validation set:
+y_train <- x[test, 1:ncol(x)-1]
+y_test <- x[test, ncol(x)]
+predictions_log <- predict(log_model, y_train)
+sqrt(mean((exp(predictions_log) - exp(y_test))^2))
+
+```
+
+Ridge:
+```{r}
+set.seed(121)
+x <- workingDF[,2:ncol(workingDF)-1]
+y <- workingDF$SalePrice
+
+#train/test
+y.train <- y[train]
+y.test <- y[test]
+
+ridge<-cv.glmnet(as.matrix(x[train, ]), y.train, alpha=0)
+plot(ridge)
+best.lambda <- ridge$lambda.min
+best.lambda
+
+
+ridge.pred <- predict(ridge, s = best.lambda, newx = as.matrix(x[test,]))
+mspe.ridge <- mean((ridge.pred - y.test)^2)
+sqrt(mspe.ridge)
+#coef(ridge)
+
+
+
+
+```
+
+Lasso:
+```{r}
+
+lasso <-cv.glmnet(as.matrix(x[train, ]), y.train, alpha=1)
+plot(lasso)
+best.lambda <- lasso$lambda.min
+best.lambda
+
+lasso.pred <- predict(lasso, s = best.lambda, newx = as.matrix(x[test,]))
+mspe.lasso <- mean((lasso.pred - y.test)^2)
+sqrt(mspe.lasso)
+#coef(lasso)
+length(coef(lasso)[coef(lasso)!= 0])
+
+
+
+```
+
+Elastic Net:
+
+```{r}
+#find best alpha - 0.5
+alphalist<-seq(0,1,by=0.1)
+elasticnet<-lapply(alphalist, function(a){cv.glmnet(as.matrix(x[train, ]), y.train, alpha=a)})
+mse <- list()
+for (i in 1:11) {
+  mse <- c(mse,min(elasticnet[[i]]$cvm) )
+  print(min(elasticnet[[i]]$cvm)) 
+  print(i)}
+which.min(unlist(mse))
+alpha_min = alphalist[2]
+cv.out <- cv.glmnet(as.matrix(x[train, ]), y.train, alpha = alpha_min)
+
+plot(cv.out)
+best.lambda <- cv.out$lambda.min
+best.lambda
+
+EN.pred <- predict(cv.out, s = best.lambda, newx = as.matrix(x[test,]))
+mspe.EN <- mean((EN.pred - y.test)^2)
+sqrt(mspe.EN)
+coef_elastic <- coef(cv.out)
+length(coef_elastic[coef_elastic!= 0])
+```
+41 variables remain at the end of elastic net, 
+
